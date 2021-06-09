@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="siteMng">
+	
+	<!-- 관련사이트관리 목록 조회 -->
+	<select id="selectSiteMngList" parameterType="hashmap" resultType="hashmap">
+		SELECT C.* FROM 
+			(
+			SELECT @rownum := @rownum + 1 AS rnum, B.* FROM
+					(
+					SELECT 
+						SITE_NO
+						, SITE_NM AS SITE_NAME
+						, SITE_IMAGE_URL AS SITE_IMG_URL
+						, SITE_IMAGE_REAL_NM AS SITE_IMG_REAL_NAME
+						, LINK_URL AS LINKED_URL
+						, SITE_SN AS SITE_SEQ,
+						IFNULL(DATE_FORMAT(REGIST_DT, '%Y-%m-%d'),'') AS REG_TS
+					FROM RELATE_SITE_INFO,						
+						 ( SELECT @rownum := 0 ) R	
+					WHERE 1 = 1
+					<if test="SEARCH_TEXT != null">
+						AND SITE_NM LIKE CONCAT('%',#{SEARCH_TEXT},'%')
+					</if>
+					ORDER BY SITE_SN, REGIST_DT DESC
+				) B
+			) C
+		<if test="page != null">
+			WHERE C.rnum BETWEEN (1 +(#{page}-1) * 10) AND (#{page}*10)
+		</if>
+	</select>
+	
+	<!-- 관련사이트관리 목록 COUNT -->
+	<select id="selectSiteMngListCount" parameterType="hashmap" resultType="hashmap">
+		SELECT COUNT(*) AS CNT
+		FROM RELATE_SITE_INFO A
+		WHERE 1 = 1
+		<if test="SEARCH_TEXT != null">
+			AND A.SITE_NM LIKE CONCAT('%',#{SEARCH_TEXT},'%')
+		</if>
+	</select>
+	
+	<!-- 관련사이트관리 등록 -->
+	<insert id="siteMngInsert" parameterType="hashmap">
+		INSERT INTO RELATE_SITE_INFO 
+			(
+				CNTER_CD, SITE_NM, SITE_IMAGE_URL, SITE_IMAGE_REAL_NM, LINK_URL, SITE_SN, REGIST_DT, REGISTER_ID
+		 	)
+		VALUES 
+			(
+				#{CNTER_CD}, #{SITE_NAME}, #{SITE_IMG_URL}, #{SITE_IMG_REAL_NAME}, #{LINKED_URL}, #{SITE_SEQ}, now(), 'admin'
+        	)	
+	</insert>
+	
+	<!-- 관련사이트관리 삭제 -->
+	<delete id="siteMngDelete" parameterType="hashmap">
+		DELETE FROM RELATE_SITE_INFO
+		WHERE SITE_NO IN 
+    	<foreach item="item" collection="array" open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</delete>
+	
+	<!-- 관련사이트관리 상세 -->
+	<!-- 3차년도 테이블에 추가된 컬럼 -->
+	<select id="selectSiteMngDetail" parameterType="hashmap" resultType="hashmap">
+		SELECT
+			SITE_NO
+			, SITE_NM AS SITE_NAME
+			, SITE_IMAGE_URL AS SITE_IMG_URL
+			, SITE_IMAGE_REAL_NM AS SITE_IMG_REAL_NAME
+			, LINK_URL AS LINKED_URL
+			, SITE_SN AS SITE_SEQ
+			, REGIST_DT AS REG_TS			
+		FROM RELATE_SITE_INFO			
+		WHERE SITE_NO = #{SITE_NO}
+	</select>
+	
+	<!-- 관련사이트관리 수정 -->
+	<update id="siteMngUpdate" parameterType="hashmap">
+		UPDATE RELATE_SITE_INFO SET 
+			SITE_NM = #{SITE_NAME}, 
+			<if test="SITE_IMG_URL != null">
+				SITE_IMAGE_URL = #{SITE_IMG_URL},
+			</if>
+			<if test="SITE_IMG_REAL_NAME != null">
+				SITE_IMAGE_REAL_NM = #{SITE_IMG_REAL_NAME},
+			</if>
+			LINK_URL = #{LINKED_URL},
+			SITE_SN = #{SITE_SEQ}
+		WHERE SITE_NO =#{SITE_NO}
+	</update>
+	
+</mapper>

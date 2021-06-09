@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neighbor.ServiceAPI.dao.mapper.drverLcHist">
+	
+	<insert id="insertDrverLcHist">
+		INSERT INTO DRVER_LC_HIST
+			(
+				COLCT_DT, MBER_ID, CNTER_CD, LC_CRDNT_X, LC_CRDNT_Y, VE, 
+				<if test="gps_ennc != null">
+					GPS_ENNC,
+				</if>
+				<if test="mvmn_drc != null">
+					MVMN_DRC,
+				</if>  
+				WHEELCHAIR_FIXING_STTUS_CD
+			)
+		VALUES
+			(
+				DATE_FORMAT(#{colct_dt}, '%Y-%m-%d %T'), #{mber_id}, #{cnter_cd}, 
+				CAST(#{lc_crdnt_x} AS DECIMAL(10,7)), CAST(#{lc_crdnt_y} AS DECIMAL(10,7)),
+				CAST(#{ve} AS DECIMAL(3,0)),
+				<if test="gps_ennc != null">
+					#{gps_ennc},
+				</if>
+				<if test="mvmn_drc != null">
+					CAST(#{mvmn_drc} AS UNSIGNED), 
+				</if>  
+				#{wheelchair_fixing_sttus_cd}
+			)
+	</insert>
+	
+</mapper>

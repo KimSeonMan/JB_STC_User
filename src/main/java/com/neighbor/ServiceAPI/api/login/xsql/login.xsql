@@ -1,0 +1,432 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="login">
+
+	<!-- 로그인 -->
+	<select id="selectUserInfo" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+			A.MBER_ID AS USER_ID
+			, A.CNTER_CD as CNTER_CD
+			, A.MBER_NM AS NAME
+			, CONVERT(AES_DECRYPT(UNHEX(A.BRTHDY), 'raison') using EUCKR) AS BIRTH_DATE
+			, A.ADRES AS ADDRESS
+			, A.ADRES_DETAIL AS ADDRESSDTL
+			, A.TELNO AS PHONE
+			, A.EMAIL AS EMAIL
+			, CONVERT(AES_DECRYPT(UNHEX(A.MBTLNUM), 'raison') using EUCKR) AS MOBILE
+			, A.ZIP AS ZIP
+			, A.SMS_RECPTN_AT AS SMS_RECEIVE_YN
+			, A.MBER_SE_CD AS USER_GBN_CD
+			, A.MBER_STTUS_CD AS USER_STAT_CD
+			, A.REGIST_DT AS REG_TS
+			, A.REGISTER_ID AS REG_USER_ID
+			, A.LOGIN_LIMIT AS LOGIN_LIMIT
+			, A.LOGIN_LIMIT_YN AS LOGIN_LIMIT_YN
+			, CD.CD_VALUE_DE AS MBER_SE_NM
+			, CI.CNTER_NM AS CNTER_NM
+			, CI.ADRES AS CNTER_ADDR
+			, CI.ZIP_CODE AS CNTER_ZIP
+			, CI.TELNO AS CNTER_TEL
+			, CI.AREA_NM_EN AS CNTER_NM_EN
+		FROM MBER_INFO A
+            LEFT OUTER JOIN CMMN_CD_VALUE_INFO CD ON A.MBER_SE_CD = CD.CD_VALUE AND CD.CD_ID='MBER_SE_CD'
+            LEFT OUTER JOIN CNTER_INFO CI ON A.CNTER_CD = CI.CNTER_CD
+ 		WHERE binary(A.MBER_ID) = #{user_id}  AND A.PASSWORD = petra.pls_encrypt_b64(#{pwd},252501) AND A.MBER_SE_CD = '10'
+	</select>
+
+	<select id="selectUserInfoByMBTLNUM" parameterType="hashmap" resultType="hashmap">
+    		SELECT
+    			A.MBER_ID AS USER_ID
+    			, A.CNTER_CD as CNTER_CD
+    			, A.MBER_NM AS NAME
+    			, CONVERT(AES_DECRYPT(UNHEX(A.BRTHDY), 'raison') using EUCKR) AS BIRTH_DATE
+    			, A.ADRES AS ADDRESS
+    			, A.ADRES_DETAIL AS ADDRESSDTL
+    			, A.TELNO AS PHONE
+    			, A.EMAIL AS EMAIL
+    			, CONVERT(AES_DECRYPT(UNHEX(A.MBTLNUM), 'raison') using EUCKR) AS MOBILE
+    			, A.ZIP AS ZIP
+    			, A.SMS_RECPTN_AT AS SMS_RECEIVE_YN
+    			, A.MBER_SE_CD AS USER_GBN_CD
+    			, A.MBER_STTUS_CD AS USER_STAT_CD
+    			, A.REGIST_DT AS REG_TS
+    			, A.REGISTER_ID AS REG_USER_ID
+    			, A.LOGIN_LIMIT AS LOGIN_LIMIT
+    			, A.LOGIN_LIMIT_YN AS LOGIN_LIMIT_YN
+    			, CD.CD_VALUE_DE AS MBER_SE_NM
+    			, CI.CNTER_NM AS CNTER_NM
+    			, CI.ADRES AS CNTER_ADDR
+    			, CI.ZIP_CODE AS CNTER_ZIP
+    			, CI.TELNO AS CNTER_TEL
+    			, CI.AREA_NM_EN AS CNTER_NM_EN
+    		FROM MBER_INFO A
+                LEFT OUTER JOIN CMMN_CD_VALUE_INFO CD ON A.MBER_SE_CD = CD.CD_VALUE AND CD.CD_ID='MBER_SE_CD'
+                LEFT OUTER JOIN CNTER_INFO CI ON A.CNTER_CD = CI.CNTER_CD
+     		WHERE  AES_DECRYPT(UNHEX(A.MBTLNUM),'raison') = #{MBTLNUM} AND A.MBER_SE_CD = '10'
+     		LIMIT 1
+    	</select>
+	
+	<update id="updateLimit" parameterType="hashmap">
+		UPDATE	MBER_INFO_upd
+		SET		LOGIN_LIMIT = #{limit}
+				<if test="limit_yn != null">
+				, LOGIN_LIMIT_YN = #{limit_yn} 
+				</if>
+		WHERE	MBER_ID = #{user_id}
+	</update>
+
+	<select id="selectUserInfo_wID" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+			A.MBER_ID AS USER_ID
+			, A.CNTER_CD as CNTER_CD
+			, A.MBER_NM AS NAME
+			, CONVERT(AES_DECRYPT(UNHEX(A.BRTHDY), 'raison') using EUCKR) AS BIRTH_DATE
+			, A.ADRES AS ADDRESS
+			, A.ADRES_DETAIL AS ADDRESSDTL
+			, A.TELNO AS PHONE
+			, A.EMAIL AS EMAIL
+			, CONVERT(AES_DECRYPT(UNHEX(A.MBTLNUM), 'raison') using EUCKR) AS MOBILE
+			, A.ZIP AS ZIP
+			, A.SMS_RECPTN_AT AS SMS_RECEIVE_YN
+			, A.MBER_SE_CD AS USER_GBN_CD
+			, A.MBER_STTUS_CD AS USER_STAT_CD
+			, A.REGIST_DT AS REG_TS
+			, A.REGISTER_ID AS REG_USER_ID
+			, A.LOGIN_LIMIT AS LOGIN_LIMIT
+			, A.LOGIN_LIMIT_YN AS LOGIN_LIMIT_YN
+			, CD.CD_VALUE_DE AS MBER_SE_NM
+			, CI.CNTER_NM AS CNTER_NM
+			, CI.ADRES AS CNTER_ADDR
+			, CI.ZIP_CODE AS CNTER_ZIP
+			, CI.TELNO AS CNTER_TEL
+			, CI.AREA_NM_EN AS CNTER_NM_EN
+		FROM MBER_INFO A
+            LEFT OUTER JOIN CMMN_CD_VALUE_INFO CD ON A.MBER_SE_CD = CD.CD_VALUE AND CD.CD_ID='MBER_SE_CD'
+            LEFT OUTER JOIN CNTER_INFO CI ON A.CNTER_CD = CI.CNTER_CD
+ 		WHERE binary(A.MBER_ID) = #{user_id} AND A.MBER_SE_CD = '10'
+	</select>
+	
+	<!-- 마이페이지 -->
+	<select id="userInfoDetail" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+			A.MBER_ID AS USER_ID
+			, A.MBER_NM AS NAME
+			, A.CNTER_CD as CNTER_CD
+			, (	SELECT CNTER_NM FROM CNTER_INFO B WHERE A.CNTER_CD = B.CNTER_CD ) AS CNTER_NM
+			, CONVERT(AES_DECRYPT(UNHEX(A.BRTHDY), 'raison') using EUCKR) AS BIRTH_DATE
+			, A.ADRES AS ADDRESS
+			, A.ADRES_DETAIL AS ADDRESSDTL
+			, A.TELNO AS PHONE
+			, A.EMAIL
+			, A.SEXDSTN
+			, IFNULL(CONVERT(AES_DECRYPT(UNHEX(A.MBTLNUM), 'raison') using EUCKR), '') AS MOBILE
+			, A.ZIP
+			, A.SMS_RECPTN_AT AS SMS_RECEIVE_YN
+			, A.MBER_SE_CD AS USER_GBN_CD
+			, A.MBER_STTUS_CD AS USER_STAT_CD
+			, A.MBER_NT_CD AS MBER_NT_CD
+			<if test="MBER_SE_CD == '10'">
+				, B.ATCHMNFL_NO AS WELFAIR_CARD_NO
+				, B.TROBL_KND_CD AS DISABLE_TYPE1_CD
+				, B.TROBL_GRAD AS DISABLE_TYPE2_CD
+				, B.ASSTN_PERSON_ENNC AS SUPPORTER_YN
+				, B.WHEELCHAIR_SE_CD AS WHEELCHAIR_CD
+				, B.WHEELCHAIR_USE_PD AS WHEELCHAIR_USE_YEAR
+				, B.ASSTN_NEED_AT AS HELPER_YN
+				, B.DS_MLRD_POSBL_AT AS COMMUNICALBE_YN
+				, B.BASIC_LIVELIHOOD_AT AS BASIC_LIVELIHOOD_AT_YN
+				, B.VALID_DT
+				, B.EP_BATCHKEY
+				, (	SELECT STORE_PAY_ID FROM CNTER_INFO B WHERE A.CNTER_CD = B.CNTER_CD ) AS STORE_PAY_ID
+			</if>
+			<if test="MBER_SE_CD == '20'">
+				, C.SUPPORT_WEEKDAYS
+				, C.SUPPORT_HOURS
+				, C.X
+				, C.Y
+				, C.REMARK
+				, C.SUPPORT_LICENSE_NO
+			</if>
+			<if test="MBER_SE_CD == '30'">
+				, D.WORK_DE AS WORK_WEEKDAYS
+				, D.WORK_TMZON AS WORK_HOURS
+				, D.X
+				, D.Y
+				, D.RM AS REMARK
+				, D.BUS_ROUTE_NO
+			</if>
+			<if test="MBER_SE_CD == '40'">
+				, E.WORK_WEEKDAYS
+				, E.WORK_HOURS
+				, E.X
+				, E.Y
+				, E.REMARK
+				, E.STATION_NAME
+			</if>
+		FROM MBER_INFO A 
+			<if test="MBER_SE_CD == '10'">
+			LEFT OUTER JOIN HANDICAP_INFO B ON A.MBER_ID = B.MBER_ID
+			</if>
+			<if test="MBER_SE_CD == '20'">
+			LEFT OUTER JOIN SUPPORTER C ON A.USER_ID = C.USER_ID
+			</if>
+			<if test="MBER_SE_CD == '30'">
+			LEFT OUTER JOIN DRVER_INFO D ON A.MBER_ID = D.MBER_ID
+			</if>
+			<if test="MBER_SE_CD == '40'">
+			LEFT OUTER JOIN STATION_EMP E ON A.MBER_ID = E.MBER_ID
+			</if>
+		WHERE A.MBER_ID = #{USER_ID}
+	</select>
+	
+	<!-- 회원가입요청 -->
+	<insert id="memberShipInsert" parameterType="hashmap">
+		INSERT INTO MBER_INFO_ins
+			(
+				MBER_ID, PASSWORD, MBER_NM, BRTHDY, ADRES, CNTER_CD,
+				<if test="TELNO != null">
+		  			TELNO, 
+        		</if>
+        		<if test="ADRES_DETAIL != null">
+		  			ADRES_DETAIL, 
+        		</if>
+				EMAIL, MBTLNUM, ZIP, SMS_RECPTN_AT, MBER_SE_CD, MBER_STTUS_CD,
+				REGIST_DT, REGISTER_ID,SEXDSTN,MBER_NT_CD
+		 	)
+		VALUES 
+			(
+				#{MBER_ID}, #{PASSWORD}, #{MBER_NM}, HEX(AES_ENCRYPT(#{BRTHDY}, 'raison')), #{ADRES}, #{CNTER_CD},
+				<if test="TELNO != null">
+		  			#{TELNO}, 
+        		</if>
+        		<if test="ADRES_DETAIL != null">
+		  			#{ADRES_DETAIL}, 
+        		</if>
+				#{EMAIL}, HEX(AES_ENCRYPT(#{MBTLNUM}, 'raison')), #{ZIP}, #{SMS_RECPTN_AT}, #{MBER_SE_CD}, #{MBER_STTUS_CD},
+				now(), #{REGISTER_ID}, #{SEXDSTN}, #{MBER_NT_CD}
+			)
+	</insert>
+	
+	<!-- 회원가입요청(이동약자) -->
+	<insert id="handicapInsert" parameterType="hashmap">
+		INSERT INTO HANDICAP_INFO 
+			(
+				MBER_ID, TROBL_KND_CD, TROBL_GRAD, 
+				ASSTN_PERSON_ENNC, WHEELCHAIR_SE_CD, WHEELCHAIR_USE_PD, ASSTN_NEED_AT, DS_MLRD_POSBL_AT,CNTER_CD, BASIC_LIVELIHOOD_AT
+				, VALID_DT
+		 	)
+		VALUES 
+			(
+				#{MBER_ID}, #{TROBL_KND_CD}, #{TROBL_GRAD}, 
+				#{ASSTN_PERSON_ENNC}, #{WHEELCHAIR_SE_CD}, #{WHEELCHAIR_USE_PD}, #{ASSTN_NEED_AT}, #{DS_MLRD_POSBL_AT}, #{CNTER_CD}, #{BASIC_LIVELIHOOD_AT}
+				, DATE(DATE_ADD(NOW(), INTERVAL 3 YEAR))
+			)
+	</insert>
+	
+	<!-- 회원가입요청(이동보조원) -->
+	<insert id="supporterInsert" parameterType="hashmap">
+		INSERT INTO ASSTN_PERSON_INFO 
+			(
+				MBER_ID, CNTER_CD, ASSTN_LCNSE_NO, WORK_DE, WORK_TMZON
+		 	)
+		VALUES 
+			(
+				#{MBER_ID}, #{CNTER_CD}, #{ASSTN_LCNSE_NO}, #{WORK_DE}, #{WORK_TMZON}
+			)
+	</insert>
+	
+	<!-- 회원가입요청(운전자) -->
+	<insert id="driverInsert" parameterType="hashmap">
+		INSERT INTO DRVER_INFO 
+			(
+				MBER_ID, CNTER_CD, 
+				<if test="DRVER_STTUS_CD != null">
+					DRVER_STTUS_CD,
+				</if>
+				 VHCLE_NO, WORK_DE, WORK_TMZON, RM
+				
+		 	)
+		VALUES 
+			(
+				#{MBER_ID}, #{CNTER_CD},
+				<if test="DRVER_STTUS_CD != null">
+					#{DRVER_STTUS_CD},
+				</if>
+				#{VHCLE_NO}, #{WORK_DE}, #{WORK_TMZON}, #{RM}
+			)
+	</insert>
+	
+	<!-- 회원가입요청(역무원) -->
+	<insert id="stationEmpInsert" parameterType="hashmap">
+		INSERT INTO STATION_PERSON_INFO 
+			(
+				MBER_ID, CNTER_CD, STATION_NM, STATION_LINE, WORK_DE, WORK_TMZON
+		 	)
+		VALUES 
+			(
+				#{MBER_ID}, #{CNTER_CD}, #{STATION_NM}, #{STATION_LINE}, #{WORK_DE}, #{WORK_TMZON}
+			)
+	</insert>
+	
+	<!-- 회원정보수정 -->
+	<update id="memberShipUpdate" parameterType="hashmap">
+		UPDATE MBER_INFO_upd SET
+			MBER_NM = #{MBER_NM}, 
+			BRTHDY = HEX(AES_ENCRYPT(#{BRTHDY}, 'raison')), 
+			ADRES = #{ADRES},
+			SEXDSTN = #{SEXDSTN},
+			PASSWORD = #{PASSWORD},
+			<if test="TELNO != null">
+	  			TELNO = #{TELNO}, 
+    		</if>
+    		<if test="ADRES_DETAIL != null">
+	  			ADRES_DETAIL = #{ADRES_DETAIL}, 
+    		</if>
+			EMAIL = #{EMAIL}, 
+			MBTLNUM = HEX(AES_ENCRYPT(#{MBTLNUM}, 'raison')), 
+			ZIP = #{ZIP}, 
+			SMS_RECPTN_AT = #{SMS_RECPTN_AT},
+			MBER_NT_CD = #{MBER_NT_CD}
+		WHERE MBER_ID = #{MBER_ID}	
+	</update>
+	
+	<!-- 회원정보수정(이동약자) -->
+	<update id="handicapUpdate" parameterType="hashmap">
+		UPDATE HANDICAP_INFO SET
+			TROBL_KND_CD = #{TROBL_KND_CD},
+			TROBL_GRAD = #{TROBL_GRAD}, 
+			ASSTN_PERSON_ENNC = #{ASSTN_PERSON_ENNC}, 
+			WHEELCHAIR_SE_CD = #{WHEELCHAIR_SE_CD}, 
+			WHEELCHAIR_USE_PD = #{WHEELCHAIR_USE_PD},
+			ASSTN_NEED_AT = #{ASSTN_NEED_AT},
+			DS_MLRD_POSBL_AT = #{DS_MLRD_POSBL_AT},
+			BASIC_LIVELIHOOD_AT = #{BASIC_LIVELIHOOD_AT}
+		WHERE MBER_ID = #{MBER_ID}
+	</update>
+	
+	<!-- 회원정보수정(이동보조원) -->
+	<update id="supporterUpdate" parameterType="hashmap">
+		UPDATE ASSTN_PERSON_INFO SET
+			WORK_DE = #{WORK_DE},
+			WORK_TMZON = #{WORK_TMZON},
+    		ASSTN_LCNSE_NO = #{ASSTN_LCNSE_NO}
+		WHERE MBER_ID = #{MBER_ID}
+	</update>
+	
+	<!-- 회원정보수정(운전자) -->
+	<update id="driverUpdate" parameterType="hashmap">
+		UPDATE DRVER_INFO SET
+			WORK_DE = #{WORK_DE}, 
+			WORK_TMZON = #{WORK_TMZON},
+    		<if test="VHCLE_NO != null">
+	  			VHCLE_NO = #{VHCLE_NO},
+    		</if>
+    		<if test="RM != null">
+    			RM = #{RM},
+    		</if>
+    	WHERE MBER_ID = #{MBER_ID}	
+	</update>
+	
+	<!-- 회원정보수정(역무원) -->
+	<update id="stationEmpUpdate" parameterType="hashmap">
+		UPDATE STATION_PERSON_INFO SET
+			WORK_DE = #{WORK_DE}, 
+			WORK_TMZON = #{WORK_TMZON},
+    		STATION_NM = #{STATION_NM},
+    		STATION_LINE = #{STATION_LINE}
+    	WHERE MBER_ID = #{MBER_ID}	
+	</update>
+	
+	<!-- 회원탈퇴 -->
+	<update id="memberShipDelete">
+		UPDATE MBER_INFO_upd SET
+			MBER_STTUS_CD = '00'
+    	WHERE MBER_ID IN 
+    	<foreach item="item" collection="array" open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</update>
+	
+	<!-- 회원ID중복체크 -->
+	<select id="memberIDDoubleAddChk" parameterType="hashmap" resultType="hashmap">
+		SELECT COUNT(*) AS CNT
+		FROM MBER_INFO
+		WHERE MBER_ID = #{MBER_ID}
+	</select>
+
+	<!-- 휴대폰번호 중복체크 -->
+    <select id="memberMBTLNUMDoubleAddChk" parameterType="hashmap" resultType="hashmap">
+    		SELECT COUNT(*) AS CNT
+    		FROM MBER_INFO
+    		WHERE AES_DECRYPT(UNHEX(MBTLNUM), 'raison') = #{mbtl_num}
+    		AND MBER_SE_CD = '10'
+            AND MBER_STTUS_CD != '00'
+            <if test="mber_id != null">
+            AND	MBER_ID != #{mber_id}
+            </if>
+    </select>
+
+	
+	<!-- login ID 찾기 -->
+ 	<select id="findLoginId" parameterType="hashmap" resultType="hashmap">
+ 		select 
+ 			MBER_ID
+ 		   ,CNTER_CD
+ 		from MBER_INFO
+ 		WHERE CONVERT(AES_DECRYPT(UNHEX(BRTHDY), 'raison') using EUCKR) = str_to_date(#{BRTHDY}, '%Y%m%d')
+ 		AND MBER_NM = #{MBER_NM}
+ 		and MBER_STTUS_CD = '02'
+ 		and MBER_SE_CD ='10'
+ 	</select>
+	
+	<!-- Password 찾기 -->
+ 	<select id="findLoginPw" parameterType="hashmap" resultType="hashmap">
+ 		select 
+ 			PASSWORD
+ 		from MBER_INFO
+ 		WHERE 1=1 
+ 		AND MBER_ID = #{MBER_ID}
+ 		AND CONVERT(AES_DECRYPT(UNHEX(BRTHDY), 'raison') using EUCKR) = str_to_date(#{BRTHDY}, '%Y%m%d')
+ 		AND MBER_NM = #{MBER_NM}
+ 	</select>
+	
+	<!-- 비밀번호 임시변경 -->
+	<update id="updateImsiPw" parameterType="hashmap" >
+		UPDATE MBER_INFO_upd SET
+			PASSWORD = #{newPw}
+    	WHERE  MBER_ID = #{MBER_ID}
+ 		AND CONVERT(AES_DECRYPT(UNHEX(BRTHDY), 'raison') using EUCKR) = str_to_date(#{BRTHDY}, '%Y%m%d')
+ 		AND MBER_NM = #{MBER_NM}
+	</update>
+	
+	<!-- 회원정포 첨부파일 번호 수정 (이동약자) -->
+	<update id="updateHaniUpdateAtchNo" parameterType="hashmap" >
+		UPDATE HANDICAP_INFO SET
+			ATCHMNFL_NO = #{ATCHMNFL_NO}
+    	WHERE  MBER_ID = #{MBER_ID}
+ 		AND CNTER_CD = #{CNTER_CD}
+	</update>
+	
+	<!-- 블랙리스트 여부 확인 -->
+	<select id="userBlackListChk" parameterType="hashmap" resultType="hashmap" >
+ 	SELECT	A.*
+			, IF(A.STATUS != 'Y', (SELECT MEMO FROM BLACKLIST_INFO WHERE MBER_ID = A.MBER_ID AND CNTER_CD = A.CNTER_CD AND SN = A.MAX_SN), "") MEMO
+	FROM	(
+			SELECT	MI.MBER_ID user_id
+					, BI.*
+					, IF(DATE_FORMAT(MAX_LIMIT_ST_DT, '%Y-%m-%d') <![CDATA[<=]]> DATE_FORMAT(#{RESVE_DT}, '%Y-%m-%d')<![CDATA[&&]]> DATE_FORMAT(#{RESVE_DT}, '%Y-%m-%d') <![CDATA[<=]]> DATE_FORMAT(MAX_LIMIT_ED_DT, '%Y-%m-%d'),'N','Y') STATUS
+			FROM	(SELECT * FROM MBER_INFO WHERE MBER_SE_CD ='10') MI
+			LEFT OUTER JOIN (SELECT MBER_ID, CNTER_CD, MAX(LIMIT_ST_DT)MAX_LIMIT_ST_DT, MAX(LIMIT_ED_DT)MAX_LIMIT_ED_DT, MAX(SN)MAX_SN FROM BLACKLIST_INFO GROUP BY MBER_ID, CNTER_CD) BI
+			ON		MI.MBER_ID = BI.MBER_ID
+			AND		MI.CNTER_CD = BI.CNTER_CD
+			WHERE	MI.MBER_ID = #{MBER_ID}
+			AND		MI.CNTER_CD = #{CNTER_CD})A
+	</select>
+	
+	<select id="userValidDTDhk" parameterType="hashmap" resultType="hashmap" >
+	SELECT	IF(DATE(NOW()) <![CDATA[<=]]> VALID_DT, IF(DATE(#{RESVE_DT}) <![CDATA[ <= ]]> VALID_DT, 'Y', 'N'), 'N')as STATUS
+	FROM	HANDICAP_INFO
+	WHERE	MBER_ID = #{MBER_ID}
+	</select>
+	
+</mapper>

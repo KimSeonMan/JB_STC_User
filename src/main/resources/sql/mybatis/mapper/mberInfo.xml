@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neighbor.ServiceAPI.dao.mapper.mberInfo">
+<resultMap type="mberInfo" id="mberInfo">
+	<result property="mber_id" column="MBER_ID"/>
+	<result property="cnter_cd" column="CNTER_CD"/>
+</resultMap>
+	<select id="getMberInfo" parameterType="mberInfo" resultType="mberInfo">
+		SELECT 
+			MI.MBER_ID AS mber_id
+			, MI.CNTER_CD AS cnter_cd
+			, MI.MBER_SE_CD AS mber_se_cd
+			, MI.MBER_STTUS_CD AS mber_sttus_cd
+			, MI.MBER_NM AS mber_nm
+			, MI.PASSWORD as password
+			, MI.SEXDSTN AS sexdstn
+			, MI.BRTHDY AS brthdy
+			, MI.ZIP AS zip
+			, MI.ADRES AS adres
+			, MI.ADRES_DETAIL AS adres_detail
+			, MI.TELNO AS telno
+			, MI.MBTLNUM AS mbtlnum
+			, MI.EMAIL AS email
+			, MI.SMS_RECPTN_AT AS sms_recptn_at
+			, MI.REGISTER_ID AS register_id
+			, MI.REGIST_DT AS regist_dt
+			, MI.TOKEN
+			, CI.CNTER_NM AS cnter_name
+		FROM MBER_INFO MI
+		LEFT OUTER JOIN CNTER_INFO CI
+		ON	MI.CNTER_CD = CI.CNTER_CD
+		WHERE MI.MBER_ID = #{mber_id}
+		<if test="cnter_cd!=null">
+		 	AND MI.CNTER_CD = #{cnter_cd}
+		 </if>
+	</select>
+	<select id="login" parameterType="mberInfo" resultType="mberInfo">
+		SELECT 
+			MBER.MBER_ID AS mber_id
+			, MBER.CNTER_CD AS cnter_cd
+			, MBER.MBER_SE_CD AS mber_se_cd
+			, MBER.MBER_STTUS_CD AS mber_sttus_cd
+			, MBER.MBER_NM AS mber_nm
+			, MBER.PASSWORD as password
+			, MBER.SEXDSTN AS sexdstn
+			, MBER.BRTHDY AS brthdy
+			, MBER.ZIP AS zip
+			, MBER.ADRES AS adres
+			, MBER.ADRES_DETAIL AS adres_detail
+			, MBER.TELNO AS telno
+			, MBER.MBTLNUM AS mbtlnum
+			, MBER.EMAIL AS email
+			, MBER.SMS_RECPTN_AT AS sms_recptn_at
+			, MBER.REGISTER_ID AS register_id
+			, MBER.REGIST_DT AS regist_dt
+            , LEFT(CNTER.CNTER_NM, 2) as cnter_name
+		FROM MBER_INFO MBER
+			, CNTER_INFO CNTER
+        WHERE binary(MBER_ID) = #{mber_id}
+			AND PASSWORD = petra.pls_encrypt_b64(#{password},252501)
+            AND MBER.CNTER_CD = CNTER.CNTER_CD
+	</select>
+	<select id="loginCheck" parameterType="mberInfo" resultType="String">
+		SELECT 
+			MBER_NM AS mber_nm
+		FROM MBER_INFO
+		WHERE MBER_ID = #{mber_id}
+			AND PASSWORD = petra.pls_encrypt_b64(#{password},252501)
+	</select>
+	<select id="searchHandicap" parameterType="hashmap" resultType="hashmap">
+		SELECT	A.MBER_NM, A.MBTLNUM, MI.MBER_NM CHK_NM, MI.MBTLNUM CHK_PHONE
+		FROM	
+			(SELECT #{mber_nm_2} AS MBER_NM, #{mbtlnum_2} AS MBTLNUM 
+			<if test="mber_nm_3 != null">
+			UNION SELECT #{mber_nm_3} AS MBER_NM, #{mbtlnum_3}AS MBTLNUM
+			</if>)A
+		LEFT OUTER JOIN (SELECT MBER_NM, REPLACE(CONVERT(AES_DECRYPT(UNHEX(MBTLNUM), 'raison') USING utf8),'-','') MBTLNUM FROM MBER_INFO) MI
+		ON		A.MBER_NM = MI.MBER_NM
+		AND		A.MBTLNUM = MI.MBTLNUM
+		GROUP BY A.MBER_NM, A.MBTLNUM
+	</select>
+</mapper>

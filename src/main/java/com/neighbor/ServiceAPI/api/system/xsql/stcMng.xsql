@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="stcMng">
+
+	<select id="getSctMngList" parameterType="hashmap" resultType="hashmap">
+		SELECT C.* FROM 
+			(
+			SELECT @rownum := @rownum + 1 AS rnum, B.* FROM
+				(
+				  select a.CNTER_CD,
+			              a.LEVEL,
+			              a.UPPER_CNTER_CD,
+			              a.CNTER_NM,
+			              a.DOMN,
+			              a.TELNO,
+			              a.MRDN_AT,
+			              a.LC_CRDNT_X,
+			              a.LC_CRDNT_Y,
+			              a.ADRES,
+			              a.ADRES_DETAIL,
+			              a.AREA_NM_EN,
+			              a.ZIP_CODE,
+			              a.MANAGE_AREA
+				    from CNTER_INFO a,
+				   ( SELECT @rownum := 0 ) R
+				   where 1=1
+				   <if test="CNTER_NM != null">
+				   		AND a.CNTER_NM LIKE CONCAT('%',#{CNTER_NM},'%')
+				   </if>
+				   <if test="CNTER_CD != null">
+				   		AND a.CNTER_CD LIKE CONCAT('%',#{CNTER_CD},'%')
+				   </if>
+				   <if test="UPPER_CNTER_CD != null">
+				   		AND a.UPPER_CNTER_CD LIKE CONCAT('%',#{UPPER_CNTER_CD},'%')
+				   </if>
+				   <if test='searchMou != null'>
+					   <if test='"N" == searchMou'>
+					   		AND(
+					   			(a.CNTER_CD LIKE CONCAT ('NAT','%')) 
+					   			OR (a.CNTER_CD LIKE CONCAT ('ARE','%') AND LEVEL = 2 )
+					   			)
+					   </if>
+					   <if test='"Y" == searchMou'>
+					   		AND (
+					   			a.CNTER_CD NOT LIKE CONCAT ('NAT','%') 
+					   			and ( 
+		                            (a.CNTER_CD NOT LIKE CONCAT ('ARE','%') and level = 2) 
+		                            or (a.CNTER_CD LIKE CONCAT ('ARE','%')	and level = 3)
+	                            ) 
+				   			)
+					   </if>
+				   </if>
+				   order by a.LEVEL
+				) B
+			) C
+		<if test="page != null">
+			WHERE C.rnum BETWEEN (1 +(#{page}-1) * 10) AND (#{page}*10)	
+		</if>	
+	</select>
+	
+	<!-- 센터목록 COUNT -->
+	<select id="getStcMngListTotalCount" parameterType="hashmap" resultType="hashmap">
+		select count(*) AS CNT
+	    from CNTER_INFO a
+	   where 1=1
+	   <if test="CNTER_NM != null">
+	   		AND a.CNTER_NM LIKE CONCAT('%',#{CNTER_NM},'%')
+	   </if>
+	   <if test="CNTER_CD != null">
+	   		AND a.CNTER_CD LIKE CONCAT('%',#{CNTER_CD},'%')
+	   </if>
+	   <if test="UPPER_CNTER_CD != null">
+	   		AND a.UPPER_CNTER_CD LIKE CONCAT('%',#{UPPER_CNTER_CD},'%')
+	   </if>
+	   <if test='searchMou != null'>
+		   <if test='"N" == searchMou'>
+		   		AND(
+		   			(a.CNTER_CD LIKE CONCAT ('NAT','%')) 
+		   			OR (a.CNTER_CD LIKE CONCAT ('ARE','%') AND LEVEL = 2 )
+		   			)
+		   </if>
+		   <if test='"Y" == searchMou'>
+		   		AND (
+		   			a.CNTER_CD NOT LIKE CONCAT ('NAT','%') 
+		   			and ( 
+                        (a.CNTER_CD NOT LIKE CONCAT ('ARE','%') and level = 2) 
+                        or (a.CNTER_CD LIKE CONCAT ('ARE','%')	and level = 3)
+                    ) 
+	   			)
+		   </if>
+	   </if>
+	</select>
+	
+	<!-- 센터 상세정보 -->
+	<select id="getSctMngDetailInfo" parameterType="hashmap" resultType="hashmap">
+		select CNTER_CD,
+	              LEVEL,
+	              UPPER_CNTER_CD,
+	              CNTER_NM,
+	              DOMN,
+	              TELNO,
+	              MRDN_AT,
+	              LC_CRDNT_X,
+	              LC_CRDNT_Y,
+	              ADRES,
+	              ADRES_DETAIL,
+	              AREA_NM_EN,
+	              ZIP_CODE,
+	              MANAGE_AREA
+	    from CNTER_INFO
+	   where 1=1
+	   		AND CNTER_CD = #{CNTER_CD}
+	</select>
+	
+	<!-- 상위 센터 검색 목록 -->
+	<select id="getLevelTwoUpper" parameterType="hashmap" resultType="hashmap">
+		select CNTER_CD,
+	              LEVEL,
+	              UPPER_CNTER_CD,
+	              CNTER_NM,
+	              DOMN,
+	              TELNO,
+	              MRDN_AT,
+	              LC_CRDNT_X,
+	              LC_CRDNT_Y,
+	              ADRES,
+	              ADRES_DETAIL,
+	              AREA_NM_EN,
+	              ZIP_CODE,
+	              MANAGE_AREA
+	    from CNTER_INFO
+	   where 1=1
+		<if test='CNTER_CD.contains("WDR")'>
+			AND (UPPER_CNTER_CD = #{CNTER_CD} OR CNTER_CD = #{CNTER_CD}) 
+		</if>
+		<if test='CNTER_CD.contains("ARE-2")'>
+			AND CNTER_CD = #{CNTER_CD}
+		</if>
+		<if test='CNTER_CD.contains("ARE-3")' >
+	   		AND (UPPER_CNTER_CD = #{UPPER_CNTER_CD}
+	   			OR CNTER_CD = #{UPPER_CNTER_CD} 
+	   			OR CNTER_CD LIKE CONCAT ('NAT','%')	
+		   		)
+		</if>
+	</select>
+	<!-- 상위 센터 목록 -->
+	<select id="getUpperCnterList" parameterType="hashmap" resultType="hashmap">
+		select CNTER_CD,
+	              LEVEL,
+	              UPPER_CNTER_CD,
+	              CNTER_NM,
+	              DOMN,
+	              TELNO,
+	              MRDN_AT,
+	              LC_CRDNT_X,
+	              LC_CRDNT_Y,
+	              ADRES,
+	              ADRES_DETAIL,
+	              AREA_NM_EN,
+	              ZIP_CODE,
+	              MANAGE_AREA
+	    from CNTER_INFO
+	   where 1=1
+		<if test='CNTER_CD.contains("NAT")'>
+			AND CNTER_CD = #{CNTER_CD} 
+		</if>
+		<if test='CNTER_CD.contains("WDR") or CNTER_CD.contains("ARE-2")'>
+			AND CNTER_CD LIKE CONCAT ('NAT','%')
+		</if>
+		<if test='CNTER_CD.contains("ARE-3")' >
+	   		AND (CNTER_CD LIKE CONCAT ('WDR','%')
+	   			OR CNTER_CD LIKE CONCAT ('NAT','%')	
+		   		)
+		</if>
+	</select>
+	
+	<select id="getCnterNo" parameterType="String" resultType="Integer">
+		select CAST(ifnull(SUBSTR(MAX(CNTER_CD), 7, 4), 0) AS UNSIGNED) +1 
+		from CNTER_INFO 
+		where CNTER_CD like CONCAT(#{cnterType} ,'%')
+	</select>
+	
+	<insert id="stcMngAdd" parameterType="hashmap" >
+		insert
+		into   CNTER_INFO
+	       (
+	              CNTER_CD,
+	              LEVEL,
+	              UPPER_CNTER_CD,
+	              CNTER_NM,
+	              DOMN,
+	              TELNO,
+	              MRDN_AT,
+	              LC_CRDNT_X,
+	              LC_CRDNT_Y,
+	              ADRES,
+	              ADRES_DETAIL,
+	              AREA_NM_EN,
+	              ZIP_CODE,
+	              MANAGE_AREA
+	       )
+	       values
+	       (
+	              #{CNTER_CD},
+	              #{LEVEL},
+	              #{UPPER_CNTER_CD},
+	              #{CNTER_NM},
+	              '-',
+	              #{TELNO},
+	              #{MRDN_AT},
+	              #{LC_CRDNT_X},
+	              #{LC_CRDNT_Y},
+	              #{ADRES},
+	              #{ADRES_DETAIL},
+	              #{AREA_NM_EN},
+	              #{ZIP_CODE},
+	              #{MANAGE_AREA}
+	       )
+	</insert>
+	<update id="stcMngModify" parameterType="hashmap" >
+		update CNTER_INFO
+		set 
+	          LEVEL = #{LEVEL},
+	          UPPER_CNTER_CD = #{UPPER_CNTER_CD},
+	          CNTER_NM = #{CNTER_NM},
+	          DOMN = '-',
+	          TELNO = #{TELNO},
+	          MRDN_AT = #{MRDN_AT},
+	          LC_CRDNT_X = #{LC_CRDNT_X},
+	          LC_CRDNT_Y = #{LC_CRDNT_Y},
+	          ADRES = #{ADRES},
+	          ADRES_DETAIL = #{ADRES_DETAIL},
+	          AREA_NM_EN = #{AREA_NM_EN},
+	          ZIP_CODE = #{ZIP_CODE},
+	          MANAGE_AREA = #{MANAGE_AREA}
+	     where CNTER_CD = #{CNTER_CD}
+	</update>
+	
+	<delete id="stcMngDelete" parameterType="String">
+		delete from CNTER_INFO
+		where CNTER_CD = #{cnterCd}
+	</delete>
+	
+	<select id="findCnterCd" parameterType="hashmap" resultType="hashmap">
+		select
+			CNTER_CD
+			, CNTER_NM
+		FROM CNTER_INFO
+		WHERE 1=1
+		AND ADRES LIKE CONCAT('%',#{cityNm},'%') 
+		AND ADRES LIKE CONCAT('%',#{gugunNm},'%')
+		<if test="dongNm != null">
+			AND ADRES LIKE CONCAT('%',#{dongNm},'%')
+		</if>
+	</select>
+	<select id="findManageAreaCnterCd" parameterType="hashmap" resultType="hashmap">
+		select
+			CNTER_CD
+			, CNTER_NM
+		FROM CNTER_INFO
+		WHERE 1=1
+		AND ADRES LIKE CONCAT('%',#{cityNm},'%') 
+		AND ADRES LIKE CONCAT('%',#{gugunNm},'%')
+		AND MANAGE_AREA LIKE CONCAT('%',#{dongNm},'%')
+	</select>
+</mapper>

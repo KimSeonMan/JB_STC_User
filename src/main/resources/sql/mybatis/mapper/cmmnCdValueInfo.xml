@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neighbor.ServiceAPI.dao.mapper.cmmnCdValueInfo">
+	<select id="getCommon" parameterType="HashMap" resultType="cmmnCdValueInfo">
+		select 
+			cd_id as cd_id
+			, cd_value as cd_value
+			, cd_value_de as cd_value_de
+		from CMMN_CD_VALUE_INFO
+		<if test="value!=null">
+		where cd_id = #{coId} 
+		</if>
+	</select>
+	<select id="selectCmmnCdValueInfo" parameterType="cmmnCdInfo" resultType="cmmnCdValueInfo">
+		select Y.*
+		from (
+			select X.*, @rownum:=@rownum+1 as rnum
+			from (
+				select 
+					cd_id as cd_id
+					, cd_value as cd_value
+					, cd_value_de as cd_value_de
+				from CMMN_CD_VALUE_INFO
+					, (SELECT @rownum:=0)TMP
+				where cd_id = #{selec_cd_id} 
+			) X
+			WHERE @rownum <![CDATA[<]]> #{pageM.limit}
+		) Y
+		WHERE rnum <![CDATA[>=]]> #{pageM.offset}
+	</select>
+	<select id="getCmmnCdValueTotal" parameterType="cmmnCdInfo" resultType="java.lang.Integer">
+		select 
+			count(cd_id)
+		from CMMN_CD_VALUE_INFO
+		where cd_id = #{selec_cd_id} 
+	</select>
+</mapper>

@@ -1,0 +1,531 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="notice">
+	
+	<!-- 게시판QA 목록 조회 -->
+	<!--	3차년도 BBS_INFO 테이블에 BOARD_CLS_CD 컬럼 추가  by ssj	-->
+	<select id="selectBoardList" parameterType="hashmap" resultType="hashmap">
+		SELECT C.* FROM 
+			(
+			SELECT @rownum := @rownum + 1 AS rnum, B.* FROM
+					(
+					SELECT 
+						A.NTT_NO AS NOTICE_NO, A.BOARD_CLS_CD AS NOTICE_CLS_CD, A.SJ AS TITLE, A.CN AS CTNT, A.RDCNT AS HIT_CNT, A.CNTNTS_NO, B.MBER_NM AS NAME, 
+						IFNULL(DATE_FORMAT(A.REGIST_DT, '%Y-%m-%d'),'') AS REG_TS,
+						(SELECT MENU_NM FROM MENU_INFO WHERE MENU_ID = C.MENU_ID AND CNTER_CD = C.CNTER_CD AND CNTER_CD = #{CNTER_CD}) AS MENU_NAME,
+						IF((SELECT COUNT(*) FROM ATCHMNFL_INFO WHERE NTT_NO = A.NTT_NO) > 0,'Y','N') AS FILE_YN,
+						C.CNTNTS_MLSFC_CD AS CNTNTS_TYPE2_CD,
+						C.CNTNTS_SCLAS_CD  AS CNTNTS_CLS_CD,
+						(SELECT CONCAT(ATCHMNFL_STRE_NM,'.',SUBSTRING_INDEX(ATCHMNFL_REAL_NM, '.', -1)) 
+						 FROM ATCHMNFL_INFO WHERE NTT_NO = A.NTT_NO ORDER BY ATCHMNFL_NO LIMIT 1) AS FILE_SAVE_NAME,
+						IFNULL(A.INDENT, '') AS INDENT, A.LEVEL AS STEP_CNT, A.ANSWER AS REPLAY, A.REGISTER_ID AS USER_ID , A.SECRET_CHECK AS SECRET_CHECK
+					FROM BBS_INFO A 
+					 	 LEFT OUTER JOIN MBER_INFO B ON A.REGISTER_ID = B.MBER_ID
+					 	 LEFT OUTER JOIN CNTNTS_INFO C ON A.CNTNTS_NO = C.CNTNTS_NO AND A.CNTER_CD = C.CNTER_CD,
+						 ( SELECT @rownum := 0 ) R		 	
+					WHERE 1 = 1
+					AND A.CNTER_CD = #{CNTER_CD}
+					<if test="NOTICE_CLS_CD != null">
+						AND A.BOARD_CLS_CD = #{NOTICE_CLS_CD}
+					</if>
+					<if test="CNTNTS_NO != null">
+						AND A.CNTNTS_NO = #{CNTNTS_NO}
+					</if>
+					<if test='SEARCH_KEY != null and SEARCH_KEY == "A"' >
+						AND A.SJ LIKE CONCAT('%',#{SEARCH_TEXT},'%')	
+					</if>
+					<if test='SEARCH_KEY != null and SEARCH_KEY == "B"' >
+						AND B.MBER_NM LIKE CONCAT('%',#{SEARCH_TEXT},'%')	
+					</if>
+					<if test='SEARCH_KEY != null and SEARCH_KEY == "C"' >
+						AND A.CN LIKE CONCAT('%',#{SEARCH_TEXT},'%')	
+					</if>
+					<if test="ST_DT != null">
+						AND A.REGIST_DT BETWEEN CONCAT(#{ST_DT},' 00:00:00') AND CONCAT(#{EN_DT},' 23:59:59')
+					</if>
+					ORDER BY A.INDENT DESC, A.LEVEL, A.REGIST_DT DESC
+				) B
+			) C
+		<if test="page != null">
+			WHERE C.rnum BETWEEN (1 +(#{page}-1) * 10) AND (#{page}*10)
+		</if>
+	</select>
+	
+	<!-- 게시판QA 목록 COUNT -->
+	<!--  3차년도 BBS_INFO 테이블에 BOARD_CLS_CD 컬럼 추가  by ssj	-->
+	<select id="selectBoardListCount" parameterType="hashmap" resultType="hashmap">
+		SELECT COUNT(*) AS CNT
+		FROM BBS_INFO A 
+		 	 LEFT OUTER JOIN MBER_INFO B ON A.REGISTER_ID = B.MBER_ID
+		 	 LEFT OUTER JOIN CNTNTS_INFO C ON A.CNTNTS_NO = C.CNTNTS_NO AND A.CNTER_CD = C.CNTER_CD ,
+			 ( SELECT @rownum := 0 ) R		
+		WHERE 1 = 1
+		AND A.CNTER_CD = #{CNTER_CD}
+		<if test="NOTICE_CLS_CD != null">
+			AND A.BOARD_CLS_CD = #{NOTICE_CLS_CD}
+		</if>
+		<if test="CNTNTS_NO != null">
+			AND A.CNTNTS_NO = #{CNTNTS_NO}
+		</if>
+		<if test='SEARCH_KEY != null and SEARCH_KEY == "A"' >
+			AND A.SJ LIKE CONCAT('%',#{SEARCH_TEXT},'%')	
+		</if>
+		<if test='SEARCH_KEY != null and SEARCH_KEY == "B"' >
+			AND B.MBER_NM LIKE CONCAT('%',#{SEARCH_TEXT},'%')	
+		</if>
+		<if test='SEARCH_KEY != null and SEARCH_KEY == "C"' >
+			AND A.CN LIKE CONCAT('%',#{SEARCH_TEXT},'%')	
+		</if>
+		<if test="ST_DT != null">
+			AND A.REGIST_DT BETWEEN CONCAT(#{ST_DT},' 00:00:00') AND CONCAT(#{EN_DT},' 23:59:59')
+		</if>
+	</select>
+	
+	<!-- FAQ 목록 조회 -->
+	<!-- 	3차년도 FAQ_INFO 테이블에 FAQ_CLS_CD 컬럼 추가  by ssj	-->
+	<!--	FAQ_INFO 테이블에 TITLE 컬럼 미존재로 QESTN 컬럼으로 대체 by ssj		-->
+	<!--	FAQ_INFO 테이블에 CTNT 컬럼 미존재로 ANSWER 컬럼으로 대체 by ssj		-->
+	<select id="selectFAQList" parameterType="hashmap" resultType="hashmap">
+		SELECT C.* FROM 
+			(
+			SELECT @rownum := @rownum + 1 AS rnum, B.* FROM
+					(
+					SELECT 
+						A.NTT_NO AS NOTICE_NO, A.FAQ_CLS_CD AS NOTICE_CLS_CD, A.QESTN AS TITLE, A.ANSWER AS CTNT, A.CNTNTS_NO, B.MBER_NM AS NAME, 
+						IFNULL(DATE_FORMAT(A.REGIST_DT, '%Y-%m-%d'),'') AS REG_TS,
+						(SELECT MENU_NM FROM MENU_INFO WHERE MENU_ID = C.MENU_ID AND CNTER_CD = C.CNTER_CD AND CNTER_CD = #{CNTER_CD}) AS MENU_NAME,
+						IF((SELECT COUNT(*) FROM ATCHMNFL_INFO WHERE NTT_NO = A.NTT_NO) > 0,'Y','N') AS FILE_YN,
+						C.CNTNTS_MLSFC_CD AS CNTNTS_TYPE2_CD, C.CNTNTS_SCLAS_CD AS CNTNTS_CLS_CD,
+						(SELECT CONCAT(ATCHMNFL_STRE_NM,'.',SUBSTRING_INDEX(ATCHMNFL_REAL_NM, '.', -1)) 
+						 FROM ATCHMNFL_INFO WHERE NTT_NO = A.NTT_NO ORDER BY ATCHMNFL_NO LIMIT 1) AS FILE_SAVE_NAME,
+						A.REGISTER_ID AS USER_ID
+					FROM FAQ_INFO A 
+					 	 LEFT OUTER JOIN MBER_INFO B ON A.REGISTER_ID = B.MBER_ID
+					 	 LEFT OUTER JOIN CNTNTS_INFO C ON A.CNTNTS_NO = C.CNTNTS_NO AND A.CNTER_CD = C.CNTER_CD,
+						 ( SELECT @rownum := 0 ) R
+					WHERE 1 = 1
+					AND A.CNTER_CD = #{CNTER_CD}
+					<if test="NOTICE_CLS_CD != null">
+						AND A.FAQ_CLS_CD = #{NOTICE_CLS_CD}
+					</if>
+					<if test="CNTNTS_NO != null">
+						AND A.CNTNTS_NO = #{CNTNTS_NO}
+					</if>
+					<if test='SEARCH_KEY != null and SEARCH_KEY == "A"' >
+						AND A.QESTN LIKE CONCAT('%',#{SEARCH_TEXT},'%')	
+					</if>
+					<if test='SEARCH_KEY != null and SEARCH_KEY == "B"' >
+						AND B.MBER_NM LIKE CONCAT('%',#{SEARCH_TEXT},'%')	
+					</if>
+					<if test='SEARCH_KEY != null and SEARCH_KEY == "C"' >
+						AND A.ANSWER LIKE CONCAT('%',#{SEARCH_TEXT},'%')	
+					</if>
+					<if test="ST_DT != null">
+						AND A.REGIST_DT BETWEEN CONCAT(#{ST_DT},' 00:00:00') AND CONCAT(#{EN_DT},' 23:59:59')
+					</if>
+					ORDER BY A.REGIST_DT DESC
+				) B
+			) C
+		<if test="page != null">
+			WHERE C.rnum BETWEEN (1 +(#{page}-1) * 10) AND (#{page}*10)
+		</if>
+	</select>
+	
+	<!-- FAQ 목록 COUNT -->
+	<!--	3차년도 FAQ_INFO 테이블에 FAQ_CLS_CD 컬럼 추가  by ssj	-->
+	<!--	FAQ_INFO 테이블에 TITLE 컬럼 미존재로 QESTN 컬럼으로 대체 by ssj		-->
+	<!--	FAQ_INFO 테이블에 CTNT 컬럼 미존재로 ANSWER 컬럼으로 대체 by ssj		-->
+	<select id="selectFAQListCount" parameterType="hashmap" resultType="hashmap">
+		SELECT COUNT(*) AS CNT
+		FROM FAQ_INFO A 
+		 	 LEFT OUTER JOIN MBER_INFO B ON A.REGISTER_ID = B.MBER_ID
+		 	 LEFT OUTER JOIN CNTNTS_INFO C ON A.CNTNTS_NO = C.CNTNTS_NO AND A.CNTER_CD = C.CNTER_CD,
+			 ( SELECT @rownum := 0 ) R
+		WHERE 1 = 1
+		AND A.CNTER_CD = #{CNTER_CD}
+		<if test="NOTICE_CLS_CD != null">
+			AND A.FAQ_CLS_CD = #{NOTICE_CLS_CD}
+		</if>
+		<if test="CNTNTS_NO != null">
+			AND A.CNTNTS_NO = #{CNTNTS_NO}
+		</if>
+		<if test='SEARCH_KEY != null and SEARCH_KEY == "A"' >
+			AND A.QESTN LIKE CONCAT('%',#{SEARCH_TEXT},'%')	
+		</if>
+		<if test='SEARCH_KEY != null and SEARCH_KEY == "B"' >
+			AND B.MBER_NM LIKE CONCAT('%',#{SEARCH_TEXT},'%')	
+		</if>
+		<if test='SEARCH_KEY != null and SEARCH_KEY == "C"' >
+			AND A.ANSWER LIKE CONCAT('%',#{SEARCH_TEXT},'%')	
+		</if>
+		<if test="ST_DT != null">
+			AND A.REGIST_DT BETWEEN CONCAT(#{ST_DT},' 00:00:00') AND CONCAT(#{EN_DT},' 23:59:59')
+		</if>
+	</select>
+	
+	<!-- 공지사항 목록 조회 -->
+	<select id="selectNoticeList" parameterType="hashmap" resultType="hashmap">
+		SELECT C.* FROM 
+			(
+			SELECT @rownum := @rownum + 1 AS rnum, B.* FROM
+					(
+					SELECT 
+						A.NTT_NO AS NOTICE_NO, A.NOTICE_CLS_CD, A.SJ AS TITLE, A.CN AS CTNT, A.RDCNT AS HIT_CNT, A.CNTNTS_NO, B.MBER_NM AS NAME, 
+						IFNULL(DATE_FORMAT(A.REGIST_DT, '%Y-%m-%d'),'') AS REG_TS,
+						(SELECT MENU_NM FROM MENU_INFO WHERE MENU_ID = C.MENU_ID AND CNTER_CD = C.CNTER_CD AND CNTER_CD = #{CNTER_CD}) AS MENU_NAME,
+						IF((SELECT COUNT(*) FROM ATCHMNFL_INFO WHERE NTT_NO = A.NTT_NO AND CNTER_CD = #{CNTER_CD}) > 0,'Y','N') AS FILE_YN,
+						C.CNTNTS_MLSFC_CD AS CNTNTS_TYPE2_CD
+						, C.CNTNTS_SCLAS_CD AS CNTNTS_CLS_CD,
+						(SELECT IF(A.NOTICE_CLS_CD = '50', ATCHMNFL_STRE_NM, FLPTH)
+						 FROM ATCHMNFL_INFO WHERE NTT_NO = A.NTT_NO ORDER BY ATCHMNFL_NO LIMIT 1) AS FILE_SAVE_NAME,
+						A.REGISTER_ID AS USER_ID, B.MBER_NM as MBER_NM
+					FROM NOTICE_INFO A 
+					 	 LEFT OUTER JOIN MBER_INFO B ON A.REGISTER_ID = B.MBER_ID
+					 	 LEFT OUTER JOIN CNTNTS_INFO C ON A.CNTNTS_NO = C.CNTNTS_NO AND A.CNTER_CD = C.CNTER_CD,
+						 ( SELECT @rownum := 0 ) R
+					WHERE 1 = 1
+					AND A.CNTER_CD = #{CNTER_CD}
+					<if test="NOTICE_CLS_CD != null">
+						AND A.NOTICE_CLS_CD = #{NOTICE_CLS_CD}
+					</if>
+					<if test="CNTNTS_NO != null">
+						AND A.CNTNTS_NO = #{CNTNTS_NO}
+					</if>
+					<if test='SEARCH_KEY != null and SEARCH_KEY == "A"' >
+						AND A.SJ LIKE CONCAT('%',#{SEARCH_TEXT},'%')	
+					</if>
+					<if test='SEARCH_KEY != null and SEARCH_KEY == "B"' >
+						AND B.MBER_NM LIKE CONCAT('%',#{SEARCH_TEXT},'%')	
+					</if>
+					<if test='SEARCH_KEY != null and SEARCH_KEY == "C"' >
+						AND A.CN LIKE CONCAT('%',#{SEARCH_TEXT},'%')	
+					</if>
+					<if test="ST_DT != null">
+						AND A.REGIST_DT BETWEEN CONCAT(#{ST_DT},' 00:00:00') AND CONCAT(#{EN_DT},' 23:59:59')
+					</if>
+					ORDER BY A.REGIST_DT DESC
+				) B
+			) C
+		<if test="page != null">
+			<if test='GALLERY_YN != null and GALLERY_YN == "Y"' >
+				WHERE C.rnum BETWEEN (1 +(#{page}-1) * 8) AND (#{page}*8)
+			</if>
+			<if test='GALLERY_YN != null and GALLERY_YN == "N"' >
+				WHERE C.rnum BETWEEN (1 +(#{page}-1) * 10) AND (#{page}*10)
+			</if>
+		</if>
+	</select>
+	
+	<!-- 공지사항 목록 COUNT -->
+	<select id="selectNoticeListCount" parameterType="hashmap" resultType="hashmap">
+		SELECT COUNT(*) AS CNT
+		FROM NOTICE_INFO A 
+		 	 LEFT OUTER JOIN MBER_INFO B ON A.REGISTER_ID = B.MBER_ID
+		 	 LEFT OUTER JOIN CNTNTS_INFO C ON A.CNTNTS_NO = C.CNTNTS_NO AND A.CNTER_CD = C.CNTER_CD,
+			 ( SELECT @rownum := 0 ) R
+		WHERE 1 = 1
+		AND A.CNTER_CD = #{CNTER_CD}
+		<if test="NOTICE_CLS_CD != null">
+			AND A.NOTICE_CLS_CD = #{NOTICE_CLS_CD}
+		</if>
+		<if test="CNTNTS_NO != null">
+			AND A.CNTNTS_NO = #{CNTNTS_NO}
+		</if>
+		<if test='SEARCH_KEY != null and SEARCH_KEY == "A"' >
+			AND A.SJ LIKE CONCAT('%',#{SEARCH_TEXT},'%')	
+		</if>
+		<if test='SEARCH_KEY != null and SEARCH_KEY == "B"' >
+			AND B.MBER_NM LIKE CONCAT('%',#{SEARCH_TEXT},'%')	
+		</if>
+		<if test='SEARCH_KEY != null and SEARCH_KEY == "C"' >
+			AND A.CN LIKE CONCAT('%',#{SEARCH_TEXT},'%')	
+		</if>
+		<if test="ST_DT != null">
+			AND A.REGIST_DT BETWEEN CONCAT(#{ST_DT},' 00:00:00') AND CONCAT(#{EN_DT},' 23:59:59')
+		</if>
+	</select>
+	
+	<!-- 공지등록가능메뉴확인 -->
+	<select id="noticeAddConfirm" parameterType="hashmap" resultType="hashmap">
+		SELECT A.CNTNTS_NO, A.ATCHMNFL_AT AS FILE_YN, A.ATCHMNFL_CO AS FILE_CNT, A.ATCHMNFL_MXMM_CPCTY AS FILE_MAX_QTY, A.ATCHMNFL_EVENTN AS FILE_EXT, B.MENU_NM AS MENU_NAME
+		FROM CNTNTS_INFO A
+		LEFT OUTER JOIN MENU_INFO B ON A.MENU_ID = B.MENU_ID AND A.CNTER_CD = B.CNTER_CD
+		WHERE A.CNTNTS_LCLAS_CD = '20'
+			AND A.CNTER_CD = #{CNTER_CD}
+			<if test="CNTNTS_TYPE2_CD != null">
+				AND A.CNTNTS_MLSFC_CD = #{CNTNTS_TYPE2_CD}
+			</if>
+			<if test="CNTNTS_CLS_CD != null">
+				AND A.CNTNTS_SCLAS_CD = #{CNTNTS_CLS_CD}
+			</if>
+			<if test="CNTNTS_NO != null">
+				AND A.CNTNTS_NO = #{CNTNTS_NO}
+			</if>
+	</select>
+	
+	<!-- 공지등록가능메뉴확인 -->
+	<select id="attachInfoDetail" parameterType="hashmap" resultType="hashmap">
+		SELECT ATCHMNFL_NO
+		FROM ATCHMNFL_INFO
+		where FILE_ATTCH_ID = #{FILE_ATTCH_ID}
+		AND ATCHMNFL_STRE_NM = #{ATCHMNFL_STRE_NM}
+		AND ATCHMNFL_REAL_NM = #{ATCHMNFL_REAL_NM}
+		AND CNTER_CD = #{CNTER_CD}
+	</select>
+	
+	<!-- 파일정보 등록 -->
+	<insert id="fileInfoInsert" parameterType="hashmap">
+		INSERT INTO ATCHMNFL_INFO 
+			(
+				CNTNTS_NO, FILE_ATTCH_ID, NTT_NO, FLPTH, ATCHMNFL_REAL_NM, ATCHMNFL_SAVE_NM, CNTER_CD
+		 	)
+		VALUES 
+			(
+				#{cntnts_no}, #{file_attch_id}, #{board_no}, #{file_url}, #{fileRealName}, #{fileSaveName}, #{CNTER_CD}
+        	)	
+	</insert>
+	
+	<!-- 파일정보 등록 -->
+	<insert id="fileInfoInsertNew" parameterType="hashmap">
+		INSERT INTO ATCHMNFL_INFO 
+			(
+				CNTNTS_NO, FILE_ATTCH_ID, FLPTH, ATCHMNFL_REAL_NM, ATCHMNFL_STRE_NM, CNTER_CD
+		 	)
+		VALUES 
+			(
+				#{CNTNTS_NO}, #{FILE_ATTCH_ID}, #{FLPTH}, #{ATCHMNFL_REAL_NM}, #{ATCHMNFL_STRE_NM}, #{CNTER_CD}
+        	)	
+	</insert>
+	
+	<!-- 파일정보 삭제 -->
+	<delete id="fileInfoDelete" parameterType="hashmap">
+		DELETE FROM ATCHMNFL_INFO
+		WHERE CNTNTS_NO = #{cntnts_no}
+			AND FILE_ATTCH_ID = #{file_attch_id}
+			AND NTT_NO = #{board_no}
+	</delete>
+	
+	<!-- 게시판(QA) 등록 -->
+	<insert id="QAInsert" parameterType="hashmap">
+		INSERT INTO BBS_INFO 
+			(
+				SJ, CN, RDCNT, BOARD_CLS_CD, REGISTER_ID, REGIST_DT, CNTNTS_NO, INDENT, CNTER_CD, SECRET_CHECK
+		 	)
+		VALUES 
+			(
+				#{TITLE}, #{CTNT}, 0, #{NOTICE_CLS_CD2}, #{USER_ID}, now(), #{CNTNTS_NO}, #{INDENT}, #{CNTER_CD} , #{SECRET_CHECK}
+        	)	
+	</insert>
+	
+	<!-- FAQ 등록 -->
+	<insert id="FAQInsert" parameterType="hashmap">
+		INSERT INTO FAQ_INFO
+			(
+				FAQ_CLS_CD, QESTN, ANSWER, REGIST_DT, CNTNTS_NO, CNTER_CD
+		 	)
+		VALUES 
+			(
+				#{NOTICE_CLS_CD2}, #{TITLE}, #{CTNT}, now(), #{CNTNTS_NO}, #{CNTER_CD}
+        	)	
+	</insert>
+	
+	<!-- 공지사항 등록 -->
+	<insert id="noticeInsert" parameterType="hashmap">
+		INSERT INTO NOTICE_INFO
+			(
+				NOTICE_CLS_CD, SJ, CN, REGISTER_ID, REGIST_DT, CNTNTS_NO, RDCNT, CNTER_CD
+		 	)
+		VALUES 
+			(
+				#{NOTICE_CLS_CD2}, #{TITLE}, #{CTNT}, #{USER_ID}, now(), #{CNTNTS_NO}, 0, #{CNTER_CD}
+        	)	
+	</insert>
+	
+	<!-- 게시판(QA) 삭제 -->
+	<delete id="QADelete" parameterType="hashmap">
+		DELETE FROM BBS_INFO
+		WHERE NTT_NO = #{NOTICE_NO}
+	</delete>
+	
+	<!-- FAQ 삭제 -->
+	<delete id="FAQDelete" parameterType="hashmap">
+		DELETE FROM FAQ_INFO
+		WHERE NTT_NO = #{NOTICE_NO}
+	</delete>
+	
+	<!-- 공지사항 삭제 -->
+	<delete id="noticeDelete" parameterType="hashmap">
+		DELETE FROM NOTICE_INFO
+		WHERE NTT_NO = #{NOTICE_NO}
+	</delete>
+	
+	<!-- 공지사항상세 -->
+	<select id="noticeDetail" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+			A.SJ AS TITLE, A.CN AS CTNT, A.RDCNT AS HIT_CNT, A.NTT_NO AS NOTICE_NO, A.NOTICE_CLS_CD, A.CNTNTS_NO, B.MBER_NM AS NAME, A.CNTER_CD,
+			IFNULL(DATE_FORMAT(A.REGIST_DT, '%Y-%m-%d'),'') AS REG_TS,
+			C.CNTNTS_MLSFC_CD AS CNTNTS_TYPE2_CD, C.ATCHMNFL_AT AS FILE_YN, C.ATCHMNFL_CO AS FILE_CNT, C.ATCHMNFL_MXMM_CPCTY AS FILE_MAX_QTY, C.ATCHMNFL_EVENTN AS FILE_EXT
+		FROM NOTICE_INFO A
+			LEFT OUTER JOIN MBER_INFO B ON A.REGISTER_ID = B.MBER_ID
+			LEFT OUTER JOIN CNTNTS_INFO C ON A.CNTNTS_NO = C.CNTNTS_NO AND A.NOTICE_CLS_CD = C.CNTNTS_SCLAS_CD AND A.CNTER_CD = C.CNTER_CD
+		WHERE A.NOTICE_CLS_CD = #{CNTNTS_CLS_CD}
+			AND A.NTT_NO = #{NOTICE_NO}
+			AND A.CNTER_CD = #{CNTER_CD}
+	</select>
+	
+	<!-- 게시판(QA)상세 -->
+	<select id="QADetail" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+			A.SJ AS TITLE, A.CN AS CTNT, A.RDCNT AS HIT_CNT, A.NTT_NO AS NOTICE_NO, A.BOARD_CLS_CD AS NOTICE_CLS_CD, A.CNTNTS_NO, B.MBER_NM AS NAME, A.CNTER_CD,
+			IFNULL(DATE_FORMAT(A.REGIST_DT, '%Y-%m-%d'),'') AS REG_TS,
+			C.CNTNTS_MLSFC_CD AS CNTNTS_TYPE2_CD, C.ATCHMNFL_AT AS FILE_YN, C.ATCHMNFL_CO AS FILE_CNT, C.ATCHMNFL_MXMM_CPCTY AS FILE_MAX_QTY, C.ATCHMNFL_EVENTN AS FILE_EXT,
+			A.LEVEL AS STEP_CNT, A.ANSWER AS REPLAY, A.REGISTER_ID
+		FROM BBS_INFO A
+			LEFT OUTER JOIN MBER_INFO B ON A.REGISTER_ID = B.MBER_ID
+			LEFT OUTER JOIN CNTNTS_INFO C ON A.CNTNTS_NO = C.CNTNTS_NO AND A.BOARD_CLS_CD = C.CNTNTS_LCLAS_CD AND A.CNTER_CD = C.CNTER_CD
+		WHERE BOARD_CLS_CD = #{CNTNTS_CLS_CD}
+			AND NTT_NO = #{NOTICE_NO}
+			AND A.CNTER_CD = #{CNTER_CD}
+	</select>
+	
+	<!-- FAQ상세 -->
+	<select id="FAQDetail" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+			A.QESTN AS TITLE, A.ANSWER AS CTNT, A.NTT_NO AS NOTICE_NO, A.FAQ_CLS_CD AS NOTICE_CLS_CD, A.CNTNTS_NO, B.MBER_NM AS NAME, A.CNTER_CD,
+			IFNULL(DATE_FORMAT(A.REGIST_DT, '%Y-%m-%d'),'') AS REG_TS,
+			C.CNTNTS_MLSFC_CD AS CNTNTS_TYPE2_CD, C.ATCHMNFL_AT AS FILE_YN, C.ATCHMNFL_CO AS FILE_CNT, C.ATCHMNFL_MXMM_CPCTY AS FILE_MAX_QTY, C.ATCHMNFL_EVENTN AS FILE_EXT
+		FROM FAQ_INFO A
+			LEFT OUTER JOIN MBER_INFO B ON A.REGISTER_ID = B.MBER_ID
+			LEFT OUTER JOIN CNTNTS_INFO C ON A.CNTNTS_NO = C.CNTNTS_NO AND A.FAQ_CLS_CD = C.CNTNTS_LCLAS_CD AND A.CNTER_CD = C.CNTER_CD
+		WHERE FAQ_CLS_CD = #{CNTNTS_CLS_CD}
+			AND NTT_NO = #{NOTICE_NO}
+			AND A.CNTER_CD = #{CNTER_CD}
+	</select>
+	
+	<!-- 공지사항첨부파일리스트 -->
+	<select id="fileInfoList" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+			A.ATCHMNFL_NO AS SEQ, A.CNTNTS_NO, A.FILE_ATTCH_ID, A.NTT_NO AS BOARD_NO, A.FLPTH AS FILE_URL,
+			A.ATCHMNFL_REAL_NM AS FILE_REAL_NAME, A.ATCHMNFL_STRE_NM AS FILE_SAVE_NAME
+		FROM ATCHMNFL_INFO A
+			<if test='CNTNTS_TYPE2_CD != null and CNTNTS_TYPE2_CD == "40"' >
+				LEFT OUTER JOIN BBS_INFO B ON A.CNTNTS_NO = B.CNTNTS_NO AND A.NTT_NO = B.NTT_NO AND A.CNTER_CD = B.CNTER_CD
+			</if>
+			<if test='CNTNTS_TYPE2_CD != null and CNTNTS_TYPE2_CD == "50"' >
+				LEFT OUTER JOIN FAQ_INFO B ON A.CNTNTS_NO = B.CNTNTS_NO AND A.NTT_NO = B.NTT_NO AND A.CNTER_CD = B.CNTER_CD
+			</if>
+			<if test='CNTNTS_TYPE2_CD != null and (CNTNTS_TYPE2_CD == "60" or CNTNTS_TYPE2_CD == "70")' >
+				LEFT OUTER JOIN NOTICE_INFO B ON A.CNTNTS_NO = B.CNTNTS_NO AND A.NTT_NO = B.NTT_NO AND A.CNTER_CD = B.CNTER_CD
+			</if>
+		WHERE A.CNTNTS_NO = #{CNTNTS_NO}
+			AND A.NTT_NO = #{NOTICE_NO}
+			AND A.CNTER_CD = #{CNTER_CD}
+			<if test="CNTNTS_TYPE2_CD != null">
+				AND FILE_ATTCH_ID = #{CNTNTS_TYPE2_CD}
+			</if>
+	</select>
+	
+	<!-- 공지사항 수정 -->
+	<update id="noticeUpdate" parameterType="hashmap">
+		UPDATE NOTICE_INFO SET
+			SJ = #{TITLE}, 
+			CN = #{CTNT}
+		WHERE NOTICE_CLS_CD = #{CNTNTS_CLS_CD}
+			AND NTT_NO = #{NOTICE_NO}	
+			AND CNTER_CD = #{CNTER_CD}
+	</update>
+	
+	<!-- 게시판QA 수정 -->
+	<update id="QAUpdate" parameterType="hashmap">
+		UPDATE BBS_INFO SET
+			SJ = #{TITLE}, 
+			CN = #{CTNT}
+		WHERE BOARD_CLS_CD = #{CNTNTS_CLS_CD}
+			AND NTT_NO = #{NOTICE_NO}
+			AND CNTER_CD = #{CNTER_CD}
+	</update>
+	
+	<!-- FAQ 수정 -->
+	<update id="FAQUpdate" parameterType="hashmap">
+		UPDATE FAQ_INFO SET
+			QESTN = #{QUESTION}, 
+			ANSWER = #{ANSWER}
+		WHERE FAQ_CLS_CD = #{CNTNTS_CLS_CD}
+			AND NTT_NO = #{NOTICE_NO}
+			AND CNTER_CD = #{CNTER_CD}
+	</update>
+	
+	<!-- 공지사항번호 -->
+	<select id="selectNoticeMaxCount" parameterType="hashmap" resultType="int">
+		<if test='CNTNTS_TYPE2_CD2 != null and CNTNTS_TYPE2_CD2 == "40"' >
+			SELECT IFNULL(MAX(NTT_NO),0)+1
+			FROM BBS_INFO
+			WHERE CNTER_CD = #{CNTER_CD}
+		</if>
+		<if test='CNTNTS_TYPE2_CD2 != null and CNTNTS_TYPE2_CD2 == "50"' >
+			SELECT IFNULL(MAX(NTT_NO),0)+1
+			FROM FAQ_INFO
+			WHERE CNTER_CD = #{CNTER_CD}
+		</if>
+		<if test='CNTNTS_TYPE2_CD2 != null and (CNTNTS_TYPE2_CD2 == "60" or CNTNTS_TYPE2_CD2 == "70")' >
+			SELECT IFNULL(MAX(NTT_NO),0)+1
+			FROM NOTICE_INFO
+			WHERE CNTER_CD = #{CNTER_CD}
+		</if>
+	</select>
+	
+	<!-- 공지사항조회수 업데이트 -->
+	<update id="noticeUpdateHitCnt" parameterType="hashmap">
+		<if test='CNTNTS_TYPE2_CD != null and CNTNTS_TYPE2_CD == "40"' >
+			UPDATE BBS_INFO SET
+				RDCNT = #{HIT_CNT} + 1
+			WHERE NTT_NO = #{NOTICE_NO}
+			AND CNTER_CD = #{CNTER_CD}
+		</if>
+		<if test='CNTNTS_TYPE2_CD != null and (CNTNTS_TYPE2_CD == "60" or CNTNTS_TYPE2_CD == "70")' >
+			UPDATE NOTICE_INFO SET
+				RDCNT = #{HIT_CNT} + 1
+			WHERE NTT_NO = #{NOTICE_NO}
+			AND CNTER_CD = #{CNTER_CD}
+		</if>
+	</update>
+	
+	<!-- QA답글작성 목록 조회 -->
+	<select id="replyList" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+			A.NTT_NO AS NOTICE_NO, A.BOARD_CLS_CD AS NOTICE_CLS_CD, A.SJ AS TITLE, A.CN AS CTNT, A.RDCNT AS HIT_CNT, A.CNTNTS_NO, B.MBER_NM AS NAME, A.CNTER_CD, 
+			IFNULL(DATE_FORMAT(A.REGIST_DT, '%Y-%m-%d'),'') AS REG_TS,
+			A.LEVEL AS STEP_CNT, A.ANSWER AS REPLAY, A.REGISTER_ID AS USER_ID
+		FROM BBS_INFO A
+			LEFT OUTER JOIN MBER_INFO B ON A.REGISTER_ID = B.MBER_ID
+		WHERE A.BOARD_CLS_CD = #{CNTNTS_CLS_CD}
+			AND (A.INDENT = (SELECT IFNULL(INDENT, NTT_NO) FROM BBS_INFO WHERE NTT_NO = #{NOTICE_NO}) 
+				OR A.NTT_NO = #{NOTICE_NO})
+			AND A.CNTER_CD = #{CNTER_CD}
+		ORDER BY A.LEVEL
+	</select>
+	
+	<insert id="replyInsert" parameterType="hashmap">
+		INSERT INTO BBS_INFO 
+			(
+				SJ, CN, RDCNT, INDENT, LEVEL, ANSWER,
+				BOARD_CLS_CD, REGISTER_ID, REGIST_DT, CNTNTS_NO, CNTER_CD
+		 	)
+		SELECT CONCAT('Re: ',SJ), CN, 0, IFNULL(INDENT, NTT_NO), IFNULL(LEVEL,0)+1, #{REPLAY},
+				BOARD_CLS_CD, #{USER_ID}, now(), CNTNTS_NO, CNTER_CD
+        FROM BBS_INFO 
+        WHERE NTT_NO = #{NOTICE_NO}
+        	AND CNTNTS_NO = #{CNTNTS_NO}
+        	AND BOARD_CLS_CD = #{CNTNTS_CLS_CD}
+        	AND CNTER_CD = #{CNTER_CD}
+	</insert>
+	
+	<update id="boardIndentUpdate" parameterType="hashmap">
+		UPDATE BBS_INFO SET 
+			INDENT = IFNULL(MAX(NTT_NO),0)
+        WHERE CNTNTS_NO = #{CNTNTS_NO}
+        	AND BOARD_CLS_CD = #{CNTNTS_CLS_CD}
+        	AND CNTER_CD = #{CNTER_CD}
+	</update>
+	
+</mapper>

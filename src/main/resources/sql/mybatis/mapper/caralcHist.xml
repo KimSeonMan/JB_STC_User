@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    <mapper namespace="com.neighbor.ServiceAPI.dao.mapper.caralcHist">
+	    <resultMap id = "caralcHist" type="caralcHist" >
+	    	<result property="cnter_cd" column="CNTER_CD"/>
+	    	<result property="mber_id" column="MBER_ID"/>
+	    	<result property="vhcle_no" column="VHCLE_NO"/>
+	    	<result property="resve_dt" column="RESVE_DT"/>
+	    </resultMap>
+	    
+	    <select id="getCaralcHistListByDriver" parameterType="HashMap" resultType="HashMap">
+			SELECT 
+				REPLACE(IFNULL(DATE_FORMAT(B.RESVE_DT, '%Y%m%d%T'),''),':','') as resve_dt
+				, B.ROUNDTRIP_AT as roundtrip_at
+		 		, B.MVMN_PURPS_CD as mvmn_purps_cd
+		 		, B.WHEELCHAIR_SE_CD as wheelchair_se_cd
+		 		, CAST(B.BRDNG_NMPR AS CHAR) as brdng_nmpr
+				, B.STRTPNT_ADRES as strtpnt_adres
+				, B.ALOC_ADRES as aloc_adres
+				, C.MBER_NM as mberNm
+				, CAST(AES_DECRYPT(UNHEX(C.MBTLNUM), 'raison') AS CHAR) AS mbtlnum
+				, B.RM as rm 
+			FROM CARALC_HIST A 
+				LEFT OUTER JOIN RCEPT_HIST B 
+				ON A.MBER_ID = B.MBER_ID AND A.RESVE_DT = B.RESVE_DT AND A.CNTER_CD = B.CNTER_CD
+				, MBER_INFO C
+				, (SELECT @rownum:=0) TMP
+			WHERE DATE(A.CARALC_DT) = DATE(NOW()) 
+			 	AND A.CNTER_CD = #{cnter_cd}
+			 	AND A.VHCLE_NO = #{vhcle_no}
+				AND A.CARALC_STTUS_CD != '110'	
+				AND A.MBER_ID = C.MBER_ID	
+				AND A.SN IN 
+						(SELECT MAX(SN) FROM CARALC_HIST GROUP BY RESVE_DT)	
+			ORDER BY A.RESVE_DT				
+	    </select>
+	    
+	    <insert id="carCancle" parameterType="caralcHist">
+			INSERT INTO CARALC_HIST
+			      (RESVE_NO ,MBER_ID, CNTER_CD, RESVE_DT, CHRG_CNTER_CD, CARALC_STTUS_CD, VHCLE_NO, CARALC_DT, TKCAR_DT, GFF_DT, MVMN_DSTNC, CYCHG, REGISTER_ID, REGIST_DT)
+			SELECT
+			    RESVE_NO ,MBER_ID, CNTER_CD, RESVE_DT, CHRG_CNTER_CD, #{caralc_sttus_cd}, null, null, null, null, null, null, #{mber_id}, now()
+			FROM CARALC_HIST
+			WHERE CNTER_CD = #{cnter_cd}
+			    AND MBER_ID = #{mber_id}
+			    AND RESVE_NO = #{resve_no}
+			    AND RESVE_DT = DATE_FORMAT(#{resve_dt}, '%Y-%m-%d %T')
+			ORDER BY SN DESC LIMIT 1	 
+	    </insert>
+	    
+	    <select id="getCaralcHistByVhcleNo" parameterType="java.lang.String" resultType="caralcHist">
+		    SELECT 
+				SN AS sn
+	 			, MBER_ID AS	mber_id
+	 			, CNTER_CD	as cnter_cd
+	 			, REPLACE(IFNULL(DATE_FORMAT(RESVE_DT, '%Y%m%d%T'),''),':','') as resve_dt
+	 			, CHRG_CNTER_CD as chgr_cnter_cd
+	 			, CARALC_STTUS_CD	as caralc_sttus_cd
+	 			, VHCLE_NO as vhcle_no
+	 			, CARALC_DT as caralc_dt
+	 			, TKCAR_DT as tkcar_dt
+	 			, GFF_DT as gff_dt
+	 			, MVMN_DSTNC as mvmn_dstnc
+	 			, CYCHG as cychg
+	 			, REGISTER_ID	as register_id
+	 			, REGIST_DT as regist_dt
+			FROM CARALC_HIST
+			WHERE VHCLE_NO = #{vhcleNo}
+			ORDER BY RESVE_DT DESC LIMIT 1
+	    </select>
+	    
+	    <update id="updateCaralcHist">
+	    	UPDATE CARALC_HIST
+	    	SET	CARALC_STTUS_CD = #{caralc_sttus_cd}
+	    		, MVMN_DSTNC = #{mvmn_dstnc}
+	    		, CYCHG = #{cychg}
+	    	WHERE VHCLE_NO = #{vhcle_no}
+	    		AND MBER_ID = #{mber_id}
+	    		AND CNTER_CD = #{cnter_cd}
+	    		AND RESVE_DT = #{resve_dt}
+	    		AND SN = #{sn}
+	    </update>
+	    
+		<insert id="insertCarInstant2" parameterType="HashMap">
+			INSERT INTO CARALC_HIST 
+		    	(MBER_ID, CNTER_CD, RESVE_DT, CHRG_CNTER_CD, CARALC_STTUS_CD, REGISTER_ID, REGIST_DT) 
+			SELECT 
+				MBER_ID, CNTER_CD, 
+				<if test="resve_dt != null">
+				#{resve_dt},  
+				</if>
+				<if test="resve_dt == null">
+				RESVE_DT,   
+				</if>
+				#{chrg_cnter_cd}, #{caralc_sttus_cd}, #{mber_id}, now()
+			FROM RCEPT_HIST
+			WHERE MBER_ID = #{mber_id}
+				AND CNTER_CD = #{cnter_cd}
+				AND RCEPT_SE_CD = #{rcept_se_cd}
+			ORDER BY RESVE_DT DESC LIMIT 1
+	    </insert>
+	    
+	    <insert id="insertCarInstant3" parameterType="caralcHist">
+			INSERT INTO CARALC_HIST 
+		    	(MBER_ID, CNTER_CD, RESVE_DT, CHRG_CNTER_CD, CARALC_STTUS_CD, VHCLE_NO, CARALC_DT, 
+		    	<if test='caralc_sttus_cd != null and caralc_sttus_cd == "100"'>
+				TKCAR_DT,
+				</if>
+				<if test='caralc_sttus_cd != null and caralc_sttus_cd == "110"'>
+				GFF_DT, 
+				</if>
+				<if test="mvmn_dstnc != null">
+				MVMN_DSTNC,  
+				</if>
+		    	<if test="cychg != null">
+				CYCHG,  
+				</if>
+		    	REGISTER_ID, REGIST_DT) 
+			SELECT 
+				MBER_ID, CNTER_CD, RESVE_DT, CHRG_CNTER_CD, #{caralc_sttus_cd}, VHCLE_NO, CARALC_DT, 
+				<if test='caralc_sttus_cd != null and caralc_sttus_cd == "100"'>
+				now(),
+				</if>
+				<if test='caralc_sttus_cd != null and caralc_sttus_cd == "110"'>
+				now(), 
+				</if>
+				<if test="mvmn_dstnc != null">
+				#{mvmn_dstnc},  
+				</if>
+		    	<if test="cychg != null">
+				#{cychg},  
+				</if>
+				#{mber_id}, now()
+			FROM CARALC_HIST
+			WHERE VHCLE_NO = #{vhcle_no}
+		    	AND RESVE_DT = DATE_FORMAT(#{resve_dt}, '%Y-%m-%d %T')
+			ORDER BY SN DESC LIMIT 1	
+	    </insert>
+	    
+    </mapper>

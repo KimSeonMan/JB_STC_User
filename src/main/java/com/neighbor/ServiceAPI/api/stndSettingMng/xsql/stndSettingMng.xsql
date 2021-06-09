@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="stndSettingMng">
+	<select id="getAllocateCarInfo" parameterType="hashmap" resultType="hashmap">
+		select a.CNTER_CD,
+		       a.ROUNDTRIP_PERM_AT,
+		       a.ALOC_REQRE_TIME,
+		       a.VHCLE_SEARCH_RADIUS,
+		       a.BEFFAT_RESVE_TIME_INTRVL,
+		       a.VHCLE_MVMN_POSBL_AT,
+		       a.POSBL_DSTNC,
+		       a.WDR_SCTN_OTHINST_MBER_USE_POSBL_AT,
+		       a.WHTHRC_OTHINST_MBER_USE_POSBL_AT
+		  from CARALC_SETUP_INFO a
+		  where 1=1
+		  AND CNTER_CD = #{CNTER_CD}
+	</select>
+	
+	<insert id="insertAllocateCarInfo" parameterType="hashmap">
+		INSERT INTO CARALC_SETUP_INFO
+		(
+				CNTER_CD, 
+				ROUNDTRIP_PERM_AT, 
+				ALOC_REQRE_TIME, 
+				VHCLE_SEARCH_RADIUS, 
+				BEFFAT_RESVE_TIME_INTRVL,
+				VHCLE_MVMN_POSBL_AT,
+				POSBL_DSTNC, 
+				WDR_SCTN_OTHINST_MBER_USE_POSBL_AT,
+				WHTHRC_OTHINST_MBER_USE_POSBL_AT
+		) VALUES
+		(
+				#{CNTER_CD},
+				#{ROUNDTRIP_PERM_AT},
+				#{ALOC_REQRE_TIME}, 
+				#{VHCLE_SEARCH_RADIUS}, 
+				#{BEFFAT_RESVE_TIME_INTRVL},
+				#{VHCLE_MVMN_POSBL_AT}, 
+				#{POSBL_DSTNC}, 
+				#{WDR_SCTN_OTHINST_MBER_USE_POSBL_AT},
+				#{WHTHRC_OTHINST_MBER_USE_POSBL_AT}
+		) 
+	</insert>
+	
+	<update id="updateAllocateCarBasicInfo" parameterType="hashmap">
+		UPDATE CARALC_SETUP_INFO SET
+			 ROUNDTRIP_PERM_AT = #{ROUNDTRIP_PERM_AT},
+			ALOC_REQRE_TIME = #{ALOC_REQRE_TIME}, 
+			VHCLE_SEARCH_RADIUS = #{VHCLE_SEARCH_RADIUS}, 
+			BEFFAT_RESVE_TIME_INTRVL = #{BEFFAT_RESVE_TIME_INTRVL}
+		WHERE CNTER_CD = #{CNTER_CD} 
+	</update>
+	
+	<update id="updatAllocateCareWdrSctnInfo" parameterType="hashmap">
+		UPDATE CARALC_SETUP_INFO SET
+			VHCLE_MVMN_POSBL_AT = #{VHCLE_MVMN_POSBL_AT}, 
+					POSBL_DSTNC = #{POSBL_DSTNC}, 
+					WDR_SCTN_OTHINST_MBER_USE_POSBL_AT = #{WDR_SCTN_OTHINST_MBER_USE_POSBL_AT}
+		WHERE CNTER_CD = #{CNTER_CD}
+	</update>
+	
+	<update id="updateAllocateCarWhthrcInfo" parameterType="hashmap">
+		UPDATE CARALC_SETUP_INFO SET
+			WHTHRC_OTHINST_MBER_USE_POSBL_AT = #{WHTHRC_OTHINST_MBER_USE_POSBL_AT}
+		WHERE CNTER_CD = #{CNTER_CD}
+	</update>
+	
+	<select id="getRankOfBarriersInfo" parameterType="hashmap" resultType="hashmap">
+		select a.CNTER_CD,
+		       a.TROBL_KND_CD,
+		       a.TROBL_GRAD,
+		       a.WHEELCHAIR_USE_YN,
+		       a.PRTCTOR_ACMPNY_AT
+		  from TROBL_GRAD_SETUP_INFO a
+		  where 1=1
+		  AND CNTER_CD = #{CNTER_CD}
+	</select>
+	
+	<select id="getTroblKndList" resultType="hashmap">
+		select
+			CD_ID
+			, CD_VALUE
+		    , CD_VALUE_DE
+		from CMMN_CD_VALUE_INFO
+		WHERE CD_ID = 'TROBL_KND_CD'
+		ORDER BY CD_VALUE
+	</select>
+	
+	<delete id="deleteTroblGradInfo" parameterType="hashmap">
+		delete from TROBL_GRAD_SETUP_INFO 
+		  where 1=1
+		  AND CNTER_CD = #{CNTER_CD}
+	</delete>
+	
+	<insert id="insertTroblGradInfo" parameterType="hashmap">
+		insert
+		into   TROBL_GRAD_SETUP_INFO
+		       (
+		              CNTER_CD,
+		              TROBL_KND_CD,
+		              TROBL_GRAD,
+		              WHEELCHAIR_USE_YN,
+		              PRTCTOR_ACMPNY_AT
+		       )
+		       values
+		       (
+		      	 	#{CNTER_CD}
+		              , #{TROBL_KND_CD}
+		              , #{TROBL_GRAD}
+		              , #{WHEELCHAIR_USE_YN}
+		              , #{PRTCTOR_ACMPNY_AT}
+		       )
+	</insert>
+	
+	<select id="getChargeForUsingInfo" parameterType="hashmap" resultType="hashmap">
+		select CNTER_CD,
+		       SN,
+		       CHRGE_SE_CD,
+		       SCTN_BEGIN_DSTNC,
+		       SCTN_END_DSTNC,
+		       CYCHG,
+		       CNTRYSIDE
+		  from CHRGE_SETUP_INFO a
+		where CNTER_CD = #{CNTER_CD}
+		ORDER BY CHRGE_SE_CD ASC, SN ASC, SCTN_BEGIN_DSTNC ASC
+	</select>
+	
+	
+	<delete id="deleteChargeForUsing" parameterType="hashmap">
+		delete from CHRGE_SETUP_INFO 
+		  where 1=1
+		  AND CNTER_CD = #{CNTER_CD}
+	</delete>
+	
+	<insert id="saveChargeForUsing" parameterType="hashmap">
+		insert
+		into   CHRGE_SETUP_INFO
+		       (
+		              CNTER_CD,
+		              SN,
+		              CHRGE_SE_CD,
+		              SCTN_BEGIN_DSTNC,
+		              SCTN_END_DSTNC,
+		              CYCHG
+		       )
+		       values
+		       (
+		      	 	#{CNTER_CD}
+		              , #{SN}
+		              , #{CHRGE_SE_CD}
+		              , #{SCTN_BEGIN_DSTNC}
+		              , #{SCTN_END_DSTNC}
+		              , #{CYCHG}
+		       )
+	</insert>
+	
+	
+	<select id="getMemberStipulationInfo" parameterType="hashmap" resultType="hashmap">
+		select CNTER_CD,
+		       STPLAT_SE_CD,
+		       CN
+		  from MBER_STPLAT_INFO 
+		  where CNTER_CD = #{CNTER_CD}
+	</select>
+	
+	<delete id="deleteMemberStipulation" parameterType="hashmap">
+		delete from MBER_STPLAT_INFO 
+		  where 1=1
+		  AND CNTER_CD = #{CNTER_CD}
+	</delete>
+	
+	<insert id="saveMemberStipulation" parameterType="hashmap">
+		insert
+		into   MBER_STPLAT_INFO
+		       (
+		              CNTER_CD,
+		              STPLAT_SE_CD,
+		              CN
+		       )
+		       values
+		       (
+		      	 	#{CNTER_CD}
+		              , #{STPLAT_SE_CD}
+		              , #{CN}
+		       )
+	</insert>
+	
+	
+	<select id="getCarInfoShareInfo" parameterType="hashmap" resultType="hashmap">
+		select a.CNTER_CD,
+		       a.CNRS_CNTER_CD,
+		       a.CNRS_SE_CD,
+		       b.CNTER_NM
+		  from VHCLE_INFO_CNRS a
+		  LEFT JOIN CNTER_INFO b
+		  on a.CNRS_CNTER_CD = b.CNTER_CD
+		  where a.CNTER_CD = #{CNTER_CD}
+	</select>
+	
+	
+	<select id="getCenterInfo" parameterType="hashmap" resultType="hashmap">
+		select CNTER_CD,
+      		   LEVEL,
+		       UPPER_CNTER_CD,
+		       CNTER_NM,
+		       DOMN,
+		       TELNO,
+		       MRDN_AT,
+		       LC_CRDNT_X,
+		       LC_CRDNT_Y,
+		       ADRES,
+		       ADRES_DETAIL
+		  from CNTER_INFO 
+		  where CNTER_CD = #{CNTER_CD}
+	</select>
+
+	<select id="getNatCenterInfo" resultType="hashmap">
+		select CNTER_CD,
+      		   LEVEL,
+		       UPPER_CNTER_CD,
+		       CNTER_NM,
+		       DOMN,
+		       TELNO,
+		       MRDN_AT,
+		       LC_CRDNT_X,
+		       LC_CRDNT_Y,
+		       ADRES,
+		       ADRES_DETAIL
+		  from CNTER_INFO 
+		  where CNTER_CD LIKE "%NAT%"
+	</select>
+	
+	<select id="getCarInfoShareInitInfo" parameterType="hashmap" resultType="hashmap">
+		select CNTER_CD,
+      		   LEVEL,
+		       UPPER_CNTER_CD,
+		       CNTER_NM,
+		       DOMN,
+		       TELNO,
+		       MRDN_AT,
+		       LC_CRDNT_X,
+		       LC_CRDNT_Y,
+		       ADRES,
+		       ADRES_DETAIL
+		  from CNTER_INFO 
+		  where 1=1 
+		  <if test='CNTER_CD.contains("NAT")'>
+		  	AND CNTER_CD NOT LIKE CONCAT ('WDR' , '%')
+		  </if>
+		  <if test='CNTER_CD.contains("WDR")'>
+		  	AND UPPER_CNTER_CD = #{CNTER_CD}
+		  </if>
+		  <if test='CNTER_CD.contains("ARE-2")'>
+		  	AND CNTER_CD LIKE CONCAT ('NAT' , '%')
+		  </if>
+		  <if test='CNTER_CD.contains("ARE-3")'>
+		  	AND (
+		  			 UPPER_CNTER_CD = #{UPPER_CNTER_CD}
+		  			 OR CNTER_CD = #{UPPER_CNTER_CD}
+		  			 OR CNTER_CD LIKE CONCAT ('NAT' , '%')
+  			 	)
+  			AND CNTER_CD NOT LIKE CONCAT ('ARE-2' , '%')
+		  </if>
+		  and CNTER_CD != #{CNTER_CD}
+	</select>
+	
+	<select id="getCarShareOption" resultType="hashmap">
+		select
+			CD_ID
+			, CD_VALUE
+		    , CD_VALUE_DE
+		from CMMN_CD_VALUE_INFO
+		WHERE CD_ID = 'CAR_SHARE_CD'
+		ORDER BY CD_VALUE
+	</select>
+	
+	<delete id="carInfoShareDelete" parameterType="hashmap">
+		delete from VHCLE_INFO_CNRS 
+		  where 1=1
+		  AND CNTER_CD = #{CNTER_CD}
+	</delete>
+	
+	<insert id="carInfoShareSave" parameterType="hashmap">
+		insert
+		into   VHCLE_INFO_CNRS
+		       (
+		              CNTER_CD,
+		              CNRS_CNTER_CD,
+		              CNRS_SE_CD
+		       )
+		       values
+		       (
+		      	 	#{CNTER_CD}
+		              , #{CNRS_CNTER_CD}
+		              , #{CNRS_SE_CD}
+		       )
+	</insert>
+	
+	<select id="getBookAbleInfo" parameterType="hashmap" resultType="hashmap">
+		select CNTER_CD,
+		       RCEPT_SE_CD,
+		       SCTN_BEGIN_TIME,
+		       SCTN_END_TIME,
+		       BEFFAT_RESVE_POSBL_DE
+		from   RESVE_USE_TIME_SETUP_INFO
+		where  CNTER_CD = #{CNTER_CD}
+	</select>
+	
+	<delete id="bookAbleDelete" parameterType="hashmap">
+		delete from RESVE_USE_TIME_SETUP_INFO 
+		  where 1=1
+		  AND CNTER_CD = #{CNTER_CD}
+	</delete>
+	
+	<insert id="bookAbleSave" parameterType="hashmap">
+		insert
+		into   RESVE_USE_TIME_SETUP_INFO
+		       (
+		              CNTER_CD,
+		              RCEPT_SE_CD,
+		              SCTN_BEGIN_TIME,
+		              SCTN_END_TIME,
+		              BEFFAT_RESVE_POSBL_DE
+		       )
+		       values
+		       (
+		      	 	#{CNTER_CD}
+		              , #{RCEPT_SE_CD}
+		              , #{SCTN_BEGIN_TIME}
+		              , #{SCTN_END_TIME}
+		              , #{BEFFAT_RESVE_POSBL_DE}
+		       )
+	</insert>
+	
+	<select id="getBookAbleOption" resultType="hashmap">
+		select
+			CD_ID
+			, CD_VALUE
+		    , CD_VALUE_DE
+		from CMMN_CD_VALUE_INFO
+		WHERE CD_ID = 'BOOKABLE_TIME_CD'
+		ORDER BY CD_VALUE
+	</select>
+	
+</mapper>

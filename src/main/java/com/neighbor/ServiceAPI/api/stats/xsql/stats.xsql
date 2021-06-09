@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="stats">
+
+	<!-- 운행현황통계  -->
+	<select id="getSelectList" parameterType="hashmap" resultType="hashmap">
+		SELECT IFNULL(dateTable.SEARCHDATE,'') as SEARCHDATE, 
+		IFNULL(A.CNT,0) as cancelCnt,
+        IFNULL(B.CNT,0) as receiptCnt,
+        IFNULL(C.CNT,0) as allocCnt,
+        IFNULL(D.CNT,0) as failCnt
+        FROM
+        
+        (SELECT 
+			DATE_FORMAT(RECEIPT_DATETIME, '%Y-%m-%d') AS SEARCHDATE, COUNT(*) AS CNT
+		FROM CAR_ALLOC_HIST		
+		WHERE RECEIPT_DATETIME BETWEEN DATE_FORMAT(#{startDate}, '%Y-%m-%d') AND DATE_FORMAT(#{endDate}, '%Y-%m-%d')
+		GROUP BY DATE_FORMAT(RECEIPT_DATETIME, '%Y-%m-%d')
+        order by SEARCHDATE) as dateTable
+        
+        left outer join
+        
+        (SELECT 
+			DATE_FORMAT(RECEIPT_DATETIME, '%Y-%m-%d') AS SEARCHDATE, ALLOC_STAT_CD, COUNT(*) AS CNT
+		FROM CAR_ALLOC_HIST		
+		WHERE RECEIPT_DATETIME BETWEEN DATE_FORMAT(#{startDate}, '%Y-%m-%d') AND DATE_FORMAT(#{endDate}, '%Y-%m-%d') AND ALLOC_STAT_CD = '00'
+		GROUP BY ALLOC_STAT_CD , DATE_FORMAT(RECEIPT_DATETIME, '%Y-%m-%d')
+        order by SEARCHDATE) as A ON dateTable.SEARCHDATE = A.SEARCHDATE
+        
+        left outer join
+       
+        (SELECT 
+			DATE_FORMAT(RECEIPT_DATETIME, '%Y-%m-%d') AS SEARCHDATE,'10' as ALLOC_STAT_CD, COUNT(*) AS CNT
+		FROM CAR_ALLOC_HIST		
+		WHERE RECEIPT_DATETIME BETWEEN DATE_FORMAT(#{startDate}, '%Y-%m-%d') AND DATE_FORMAT(#{endDate}, '%Y-%m-%d')
+		GROUP BY DATE_FORMAT(RECEIPT_DATETIME, '%Y-%m-%d')
+        order by SEARCHDATE) as B ON dateTable.SEARCHDATE = B.SEARCHDATE
+        
+        left outer join
+        
+         (SELECT 
+			DATE_FORMAT(RECEIPT_DATETIME, '%Y-%m-%d') AS SEARCHDATE, ALLOC_STAT_CD, COUNT(*) AS CNT
+		FROM CAR_ALLOC_HIST		
+		WHERE RECEIPT_DATETIME BETWEEN DATE_FORMAT(#{startDate}, '%Y-%m-%d') AND DATE_FORMAT(#{endDate}, '%Y-%m-%d') AND ALLOC_STAT_CD = '20'
+		GROUP BY ALLOC_STAT_CD , DATE_FORMAT(RECEIPT_DATETIME, '%Y-%m-%d')
+        order by SEARCHDATE) as C ON dateTable.SEARCHDATE = C.SEARCHDATE
+        
+        left outer join
+        
+        (SELECT 
+			DATE_FORMAT(RECEIPT_DATETIME, '%Y-%m-%d') AS SEARCHDATE, ALLOC_STAT_CD, COUNT(*) AS CNT
+		FROM CAR_ALLOC_HIST		
+		WHERE RECEIPT_DATETIME BETWEEN DATE_FORMAT(#{startDate}, '%Y-%m-%d') AND DATE_FORMAT(#{endDate}, '%Y-%m-%d') AND ALLOC_STAT_CD = '30'
+		GROUP BY ALLOC_STAT_CD , DATE_FORMAT(RECEIPT_DATETIME, '%Y-%m-%d')
+        order by SEARCHDATE) D ON dateTable.SEARCHDATE = D.SEARCHDATE
+        
+        order by SEARCHDATE desc
+	</select>
+	
+	
+	<select id="getToDayAllocDataList" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+			DATE_FORMAT(RESVE_DT, '%H') AS SEARCHDATE, CARALC_STTUS_CD as ALLOC_STAT_CD, COUNT(*) AS CNT
+		FROM CARALC_HIST		
+		WHERE DATE_FORMAT(RESVE_DT,'%Y-%m-%d') = DATE_FORMAT(#{searchDate}, '%Y-%m-%d')
+		GROUP BY CARALC_STTUS_CD , DATE_FORMAT(RESVE_DT, '%H')
+        order by SEARCHDATE
+	</select>
+	
+	<select id="getToDayUseStatList" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+			DATE_FORMAT(RESVE_DT, '%Y-%m-%d') AS SEARCHDATE, CARALC_STTUS_CD as ALLOC_STAT_CD, COUNT(*) AS CNT
+		FROM CARALC_HIST		
+		WHERE DATE_FORMAT(RESVE_DT,'%Y-%m-%d') = DATE_FORMAT(#{searchDate}, '%Y-%m-%d')
+		GROUP BY CARALC_STTUS_CD , DATE_FORMAT(RESVE_DT, '%Y-%m-%d')
+	</select>
+	
+	
+</mapper>

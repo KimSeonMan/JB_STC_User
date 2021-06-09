@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    <mapper namespace="com.neighbor.ServiceAPI.dao.mapper.cnterInfo">
+	<select id="getCnterInfoByCnterCd" parameterType="java.lang.String" resultType="cnterInfo">
+		SELECT 
+			CNTER_CD 
+			, LEVEL
+			, UPPER_CNTER_CD
+			, CNTER_NM 
+			, DOMN 
+			, TELNO 
+			, MRDN_AT 
+			, LC_CRDNT_X 
+			, LC_CRDNT_Y 
+			, ADRES 
+			, ADRES_DETAIL 
+			, FAX_TELNO
+		FROM CNTER_INFO
+		WHERE CNTER_CD = #{cnter_cd}
+	</select>
+	<select id="getCnterInfo" parameterType="HashMap" resultType="cnterInfo">
+		SELECT	CNTER_CD 
+			, LEVEL
+			, UPPER_CNTER_CD
+			, CNTER_NM 
+			, DOMN 
+			, TELNO 
+			, MRDN_AT 
+			, LC_CRDNT_X 
+			, LC_CRDNT_Y 
+			, ADRES 
+			, ADRES_DETAIL
+			, ORDER_CNTER
+		FROM
+		(
+			SELECT CASE	WHEN	REGION_1DEPTH.flag='0'	<!-- 시/도에 맞는 cnter_cd가 없을 경우 -->
+						THEN	(SELECT	CNTER_CD	FROM CNTER_INFO	WHERE `LEVEL`='1')
+						ELSE	CASE WHEN	REGION_2DEPTH.flag='0' <!-- 시/구/군에 맞는 cnter_cd가 없을 경우 -->
+									THEN	(SELECT	CNTER_CD	FROM CNTER_INFO	WHERE `LEVEL`='1')
+									ELSE	(	SELECT	A.CNTER_CD
+												FROM	CNTER_AREA_INFO A
+												INNER JOIN CNTER_INFO B
+												ON		A.CNTER_CD=B.CNTER_CD
+												WHERE	AREA_NM LIKE CONCAT('%',#{depth2},'%')
+												AND		LV='2')
+								END
+					END	AS		GET_CNTER_CD,(
+								SELECT CASE	WHEN REGION_1DEPTH.flag='1'
+								THEN 'Y' ELSE 'N' END) as ORDER_CNTER
+			FROM(
+					SELECT	EXISTS(
+								SELECT	*
+								FROM	CNTER_AREA_INFO A
+								INNER JOIN CNTER_INFO B
+								ON		A.CNTER_CD=B.CNTER_CD
+								WHERE	AREA_NM LIKE CONCAT('%',#{depth1},'%')
+								AND		LV='1')flag
+								)REGION_1DEPTH <!-- 시/도 -->
+					,(
+					SELECT	EXISTS(
+								SELECT	*
+								FROM	CNTER_AREA_INFO A
+								INNER JOIN CNTER_INFO B
+								ON		A.CNTER_CD=B.CNTER_CD
+								WHERE	AREA_NM LIKE CONCAT('%',#{depth2},'%')
+								AND		LV='2')flag
+								)REGION_2DEPTH	<!-- 시/군/구-->
+							)A, CNTER_INFO B
+			WHERE		B.CNTER_CD=A.GET_CNTER_CD
+	</select>
+	<select id="getNatCnterCd" resultType="cnterInfo">
+		SELECT 
+			CNTER_CD 
+			, LEVEL
+			, UPPER_CNTER_CD
+			, CNTER_NM 
+			, DOMN 
+			, TELNO 
+			, MRDN_AT 
+			, LC_CRDNT_X 
+			, LC_CRDNT_Y 
+			, ADRES 
+			, ADRES_DETAIL 
+			, ZIP_CODE
+		FROM CNTER_INFO
+		WHERE LEVEL = '1'
+	</select>
+	<select id="getCnterInfoUseTime" parameterType="HashMap" resultType="cnterResveUseTime">
+		SELECT 
+				A.CNTER_CD AS cnter_cd
+				, CNTER_NM AS cnter_nm
+				, RCEPT_SE_CD AS rcept_se_cd
+				, SCTN_BEGIN_TIME AS sctn_begin_time
+				, SCTN_END_TIME AS sctn_end_time
+				, BEFFAT_RESVE_POSBL_DE AS beffat_resve_posble_de
+		FROM	RESVE_USE_TIME_SETUP_INFO A
+		INNER JOIN CNTER_INFO B
+		ON		A.CNTER_CD=B.CNTER_CD
+		WHERE	A.CNTER_CD = #{cnter_cd}
+	</select>
+	<select id="getCnterGrpInfo" parameterType="java.lang.String" resultType="HashMap">
+		select	A.CNTER_CD, A.UPPER_CNTER_CD, A.GRP_ID, B.IN_VHCLE_RATE, B.OUT_VHCLE_RATE
+		from	CNTER_GRP_INFO A, CNTER_VHCLE_RATE_SET B 
+		where	A.UPPER_CNTER_CD=B.CNTER_CD 
+		and		A.GRP_ID = B.GRP_ID
+		and		A.CNTER_CD=#{cnter_cd}
+	</select>
+    </mapper>

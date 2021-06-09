@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="rcept">
+
+	<select id="selectRecptList" parameterType="hashmap" resultType="hashmap">
+		SELECT C.*
+		FROM
+		(
+		SELECT @rownum := @rownum + 1 AS rnum, B.*
+		FROM
+		(
+		SELECT
+		RH.RESVE_NO
+		, RH.RESVE_DT
+		, date_format(RH.RESVE_DT, '%Y-%m-%d %H:%i') AS RESVE_DT_FORMAT
+		, RH.STRTPNT_ADRES
+		, RH.ALOC_ADRES
+		, RH.MVMN_TY_CD
+		, ifnull((SELECT CD_VALUE_DE
+		FROM CMMN_CD_VALUE_INFO
+		WHERE CD_ID = 'MVMN_TY_CD'
+		AND CD_VALUE = RH.MVMN_TY_CD) , '-') AS MVMN_TY_CD_DE
+		, CH.CHRG_CNTER_CD
+		, RH.MBER_ID
+		, RH.CNTER_CD
+		, CH.REGIST_DT
+		, CH.CARALC_STTUS_CD
+		, ifnull((
+		SELECT
+		CD_VALUE_DE
+		FROM CMMN_CD_VALUE_INFO
+		WHERE CD_ID = 'CARALC_STTUS_CD'
+		AND CD_VALUE = CH.CARALC_STTUS_CD
+		), '-') AS CARALC_STTUS_CD_DE
+		, RH.RCEPT_SE_CD
+		, ifnull((
+		SELECT
+		CD_VALUE_DE
+		FROM CMMN_CD_VALUE_INFO
+		WHERE CD_ID = 'RCEPT_SE_CD'
+		AND CD_VALUE = RH.RCEPT_SE_CD
+		), '-') AS RCEPT_SE_CD_DE
+		, RH.SUPPORT_NUM
+		FROM CARALC_HIST CH
+		LEFT JOIN RCEPT_HIST RH
+		ON RH.RESVE_NO = CH.RESVE_NO
+		, ( SELECT @rownum := 0 ) R
+		WHERE 1=1
+		AND RH.MBER_ID = #{USER_ID}
+		AND CH.SN IN (SELECT MAX(SN) FROM CARALC_HIST TMP_CH GROUP BY TMP_CH.RESVE_NO)
+		<if test="ST_DT != null and EN_DT != null">
+			AND RH.RESVE_DT BETWEEN DATE(#{ST_DT}) AND DATE(#{EN_DT})
+		</if>
+		<if test="CARALC_STTUS_CD != null">
+			<if test="CARALC_STTUS_CD == '10'">
+				AND CH.CARALC_STTUS_CD = #{CARALC_STTUS_CD}
+			</if>
+			<if test="CARALC_STTUS_CD == '20'">
+				AND CH.CARALC_STTUS_CD in ('20', '40')
+			</if>
+			<if test="CARALC_STTUS_CD == '30'">
+				AND CH.CARALC_STTUS_CD in ('30', '50')
+			</if>
+			<if test="CARALC_STTUS_CD == '60'">
+				AND CH.CARALC_STTUS_CD = #{CARALC_STTUS_CD}
+			</if>
+			<if test="CARALC_STTUS_CD == '70'">
+				AND CH.CARALC_STTUS_CD in ('70', '80', '90', '100', '110')
+			</if>
+		</if>
+		ORDER BY RH.RESVE_DT
+		) B
+		) C
+		<if test="page != null">
+			WHERE C.rnum BETWEEN (1 +(#{page}-1) * 10) AND (#{page}*10)
+		</if>
+    </select>
+    <select id="selectRecptListCount" parameterType="hashmap" resultType="hashmap">
+        SELECT
+        COUNT(*) AS CNT
+        FROM RCEPT_HIST A
+        INNER JOIN (SELECT CH1.*
+        FROM CARALC_HIST CH1 LEFT JOIN CARALC_HIST CH2
+        ON (CH1.RESVE_NO = CH2.RESVE_NO AND CH1.SN <![CDATA[<]]> CH2.SN)
+        WHERE CH2.RESVE_NO IS NULL) AS B ON A.RESVE_NO = B.RESVE_NO
+        WHERE 1=1
+        AND A.MBER_ID = #{USER_ID}
+        <if test="ST_DT != null and EN_DT != null">
+            AND A.RESVE_DT BETWEEN DATE(#{ST_DT}) AND DATE(#{EN_DT})
+        </if>
+        <if test="CARALC_STTUS_CD != null">
+            <if test="CARALC_STTUS_CD == '10'">
+                AND B.CARALC_STTUS_CD = #{CARALC_STTUS_CD}
+            </if>
+            <if test="CARALC_STTUS_CD == '30'">
+                AND B.CARALC_STTUS_CD in ('30', '40', '50')
+            </if>
+            <if test="CARALC_STTUS_CD == '60'">
+                AND B.CARALC_STTUS_CD = #{CARALC_STTUS_CD}
+            </if>
+            <if test="CARALC_STTUS_CD == '70'">
+                AND B.CARALC_STTUS_CD = #{CARALC_STTUS_CD}
+            </if>
+
+        </if>
+        ORDER BY A.RESVE_DT DESC
+    </select>
+	<select id="wheelChairTpList" resultType="hashmap">
+			select
+				CD_VALUE
+			    , CD_VALUE_DE
+			    , CD_ID
+			from CMMN_CD_VALUE_INFO
+			where cd_id = 'WHEELCHAIR_SE_CD'
+	</select>
+	<select id="moveTpList" resultType="hashmap">
+			select
+				CD_VALUE
+			    , CD_VALUE_DE
+			    , CD_ID
+			from CMMN_CD_VALUE_INFO
+			where cd_id = 'MVMN_PURPS_CD'
+	</select>
+	<select id="getCnterInfo" parameterType="String" resultType="hashmap">
+			select
+				A.CNTER_CD
+				, A.CNTER_NM
+			    , B.ROUNDTRIP_PERM_AT
+			    , B.ALOC_REQRE_TIME
+			    , B.VHCLE_MVMN_POSBL_AT
+			    , FORMAT(B.BEFFAT_RESVE_TIME_INTRVL,0) as BEFFAT_RESVE_TIME_INTRVL
+			    , FORMAT(C.BEFFAT_RESVE_POSBL_DE,0) as BEFFAT_RESVE_POSBL_DE
+			    , C.RCEPT_SE_CD
+			    , FORMAT(C.SCTN_BEGIN_TIME,0) as SCTN_BEGIN_TIME
+			    , FORMAT(C.SCTN_END_TIME,0) as SCTN_END_TIME
+			    , FORMAT(D.DAY_RESVE_BEGIN_TIME,0) as DAY_RESVE_BEGIN_TIME
+			    , FORMAT(D.DAY_RESVE_END_TIME,0) as DAY_RESVE_END_TIME
+			    , FORMAT(D.TOM_RESVE_BEGIN_TIME,0) as TOM_RESVE_BEGIN_TIME
+			    , FORMAT(D.TOM_RESVE_END_TIME,0) as TOM_RESVE_END_TIME
+			    , E.ALOC_REQRE_TIME as ALOC_REQRE_TIME
+			    , A.RESVE_LV
+			FROM CNTER_INFO A
+			LEFT JOIN CARALC_SETUP_INFO B ON A.CNTER_CD = B.CNTER_CD
+			LEFT JOIN RESVE_USE_TIME_SETUP_INFO C ON A.CNTER_CD = C.CNTER_CD
+			LEFT JOIN RESVE_POSSIBLE_TIME_SETUP_INFO D ON A.CNTER_CD = D.CNTER_CD AND C.RCEPT_SE_CD = D.RCEPT_SE_CD
+			LEFT JOIN CARALC_SETUP_INFO E ON A.CNTER_CD = E.CNTER_CD
+			WHERE 1=1
+			AND A.CNTER_CD = #{cnterCd}
+			order by C.RCEPT_SE_CD
+	</select>
+
+	<insert id="rceptHistInsert" parameterType="hashmap" >
+		INSERT INTO RCEPT_HIST
+			(`RESVE_DT`
+			, `MBER_ID`
+			, `CNTER_CD`
+			, `RCEPT_SE_CD`
+			, `ONLINE_AT`
+			, `PBTRNSP_TRNSIT_AT`
+			, `ROUNDTRIP_AT`
+			, `MVMN_PURPS_CD`
+			, `WHEELCHAIR_SE_CD`
+			, `MVMN_TY_CD`
+			, `BRDNG_NMPR`
+			, `SUPPORT_NUM`
+			, `START_LC_CRDNT_X`
+			, `START_LC_CRDNT_Y`
+			, `ARVL_LC_CRDNT_X`
+			, `ARVL_LC_CRDNT_Y`
+			, `STRTPNT_ADRES`
+			, `ALOC_ADRES`
+			, `STRTPNT_FULL_ADRES`
+			, `ALOC_FULL_ADRES`
+			, `EXPECT_REQRE_TIME`
+			, `EXPECT_MVMN_DSTNC`
+			, `EXPECT_CYCHG`
+			, `RM`
+			, `SN`
+			, `CARALC_STTUS_CD`
+			, `OPERATOR_CONFIRM`)
+			VALUES
+			(
+			#{RESVE_DT}
+			, #{MBER_ID}
+			, #{CNTER_CD}
+			, #{RCEPT_SE_CD}
+			, 'I'
+			, #{PBTRNSP_TRNSIT_AT}
+			, #{ROUNDTRIP_AT}
+			, #{MVMN_PURPS_CD}
+			, #{WHEELCHAIR_SE_CD}
+			, #{MVMN_TY_CD}
+			, #{BRDNG_NMPR}
+			, #{SUPPORT_NUM}
+			, #{START_LC_CRDNT_X}
+			, #{START_LC_CRDNT_Y}
+			, #{ARVL_LC_CRDNT_X}
+			, #{ARVL_LC_CRDNT_Y}
+			, #{STRTPNT_ADRES}
+			, #{ALOC_ADRES}
+			, #{STRTPNT_FULL_ADRES}
+			, #{ALOC_FULL_ADRES}
+			, #{EXPECT_REQRE_TIME}
+			, #{EXPECT_MVMN_DSTNC}
+			, #{EXPECT_CYCHG}
+			, #{RM}
+			<!-- <if test='PBTRNSP_TRNSIT_AT == "Y"'>
+			, (
+			SELECT			CASE
+			 			WHEN	resve_flag='0'
+			 			THEN	CAST('1' AS UNSIGNED)
+			 			WHEN	resve_flag='1'
+					 	THEN		CASE
+						 			WHEN	MAX_LONG_SN='0'
+					 				THEN	CAST('1' AS UNSIGNED)
+						 			ELSE		CASE
+								 				WHEN	same_resve_count='1'
+								 				THEN	MAX_LONG_SN
+								 				WHEN	same_resve_count='2'
+								 				THEN	MAX_LONG_SN+1
+								 				END
+						 			END
+			 			END	AS SN
+			FROM			(
+								SELECT		EXISTS(
+												SELECT		*
+												FROM		RCEPT_HIST
+												WHERE		LEFT(REPLACE(IFNULL(DATE_FORMAT(RESVE_DT, '%Y%m%d%T'),''),':',''),8)=LEFT(REPLACE(IFNULL(DATE_FORMAT(#{RESVE_DT}, '%Y%m%d%T'),''),':',''),8) )AS resve_flag
+							, (
+								SELECT		MAX(SN)
+								FROM		RCEPT_HIST
+								WHERE		LEFT(REPLACE(IFNULL(DATE_FORMAT(RESVE_DT, '%Y%m%d%T'),''),':',''),8)=LEFT(REPLACE(IFNULL(DATE_FORMAT(#{RESVE_DT}, '%Y%m%d%T'),''),':',''),8)
+								AND			PBTRNSP_TRNSIT_AT="Y"
+								GROUP BY	LEFT(REPLACE(IFNULL(DATE_FORMAT(RESVE_DT, '%Y%m%d%T'),''),':',''),8) )AS MAX_LONG_SN
+							,(
+								SELECT		COUNT(*)
+								FROM(
+											SELECT		MAX(SN) MAX_LONG_SN
+											FROM		RCEPT_HIST
+											WHERE		LEFT(REPLACE(IFNULL(DATE_FORMAT(RESVE_DT, '%Y%m%d%T'),''),':',''),8)=LEFT(REPLACE(IFNULL(DATE_FORMAT(#{RESVE_DT}, '%Y%m%d%T'),''),':',''),8)
+											AND			PBTRNSP_TRNSIT_AT="Y"
+											GROUP BY	LEFT(REPLACE(IFNULL(DATE_FORMAT(RESVE_DT, '%Y%m%d%T'),''),':',''),8)
+								)A, RCEPT_HIST B
+								WHERE		LEFT(REPLACE(IFNULL(DATE_FORMAT(B.RESVE_DT, '%Y%m%d%T'),''),':',''),8)=LEFT(REPLACE(IFNULL(DATE_FORMAT(#{RESVE_DT}, '%Y%m%d%T'),''),':',''),8)
+					 			AND			B.SN=MAX_LONG_SN )AS same_resve_count
+							 ) A
+				)
+			</if>  -->
+			<if test='PBTRNSP_TRNSIT_AT != "Y"'>
+			,'0'
+			</if>
+			, '10'
+			, 'N'
+			)
+	</insert>
+
+	<select id="chkSameResveDt" parameterType="hashmap" resultType="hashmap">
+		SELECT	COUNT(*) CNT
+		FROM(
+				SELECT	CASE WHEN	A.RESVE_DT <![CDATA[<=]]> T_RESVE_DT
+							 THEN	CASE WHEN	T_RESVE_DT <![CDATA[<=]]> EXPECT_ARRV_TIME
+							 			THEN	CAST('1'as UNSIGNED)
+							 			ELSE	CAST('0'as UNSIGNED)
+							 		END
+							 ELSE	CAST('0'as UNSIGNED)
+						END AS flag1
+						, CASE WHEN	A.RESVE_DT <![CDATA[<=]]> T_EXPECT_ARRV_TIME
+							 THEN	CASE WHEN	T_EXPECT_ARRV_TIME <![CDATA[<=]]> EXPECT_ARRV_TIME
+							 			THEN	CAST('1'as UNSIGNED)
+							 			ELSE	CAST('0'as UNSIGNED)
+							 		END
+							 ELSE	CAST('0'as UNSIGNED)
+						END AS flag2
+						, T_EXPECT_ARRV_TIME
+						, T_RESVE_DT
+				FROM	(
+					    SELECT	A.RESVE_DT, DATE_ADD(A.RESVE_DT, INTERVAL EXPECT_REQRE_TIME MINUTE) EXPECT_ARRV_TIME
+					    FROM	RCEPT_HIST A
+					    INNER JOIN (SELECT * FROM CARALC_HIST A INNER JOIN (SELECT MAX(SN)MAX_SN FROM CARALC_HIST GROUP BY RESVE_NO)B ON SN=MAX_SN) B
+					    ON		A.RESVE_NO=B.RESVE_NO
+					    WHERE	B.CARALC_STTUS_CD!='20'
+					    AND		A.MBER_ID=#{MBER_ID}
+					    AND		A.CNTER_CD=#{CNTER_CD}
+					    AND		DATE(A.RESVE_DT)=DATE(#{RESVE_DT})
+						)A
+						, (SELECT	DATE_ADD(date_format(#{RESVE_DT}, '%Y-%m-%d %T'), INTERVAL #{EXPECT_REQRE_TIME} MINUTE) T_EXPECT_ARRV_TIME)B
+						, (SELECT	date_format(#{RESVE_DT}, '%Y-%m-%d %T')T_RESVE_DT)C
+				)A
+		WHERE	flag1='1'
+		OR		flag2='1'
+	</select>
+
+    <select id="startPointList" parameterType="hashmap" resultType="hashmap">
+        <!-- 		SELECT
+                    START_LC_CRDNT_X,
+                    START_LC_CRDNT_Y,
+                    STRTPNT_ADRES
+
+                FROM (
+                SELECT
+                    A.CNTER_CD,
+                    A.MBER_ID,
+                    MAX(A.RESVE_DT) AS RESVE_DT,
+                    START_LC_CRDNT_X,
+                    START_LC_CRDNT_Y,
+                    STRTPNT_ADRES
+                FROM CARALC_HIST A
+                , RCEPT_HIST B
+                WHERE A.CNTER_CD = B.CNTER_CD
+                AND A.MBER_ID = B.MBER_ID
+                AND A.REGIST_DT = B.RESVE_DT
+                AND CARALC_STTUS_CD = '10'
+                AND A.MBER_ID = #{MBER_ID}
+                GROUP BY STRTPNT_ADRES , START_LC_CRDNT_X, START_LC_CRDNT_Y, CNTER_CD, MBER_ID
+                ) A
+                LEFT JOIN CARALC_HIST B ON B.MBER_ID = #{MBER_ID} AND A.MBER_ID = B.MBER_ID AND A.CNTER_CD = B.CNTER_CD AND A.RESVE_DT = B.RESVE_DT AND B.CARALC_STTUS_CD = '10'
+                ORDER BY B.SN DESC
+                LIMIT 10 -->
+        SELECT	STRTPNT_ADRES , START_LC_CRDNT_X, START_LC_CRDNT_Y, STRTPNT_FULL_ADRES
+        FROM RCEPT_HIST B
+        INNER JOIN (SELECT CH1.*
+        FROM CARALC_HIST CH1 LEFT JOIN CARALC_HIST CH2
+        ON (CH1.RESVE_NO = CH2.RESVE_NO AND CH1.SN <![CDATA[<]]> CH2.SN)
+        WHERE CH2.RESVE_NO IS NULL) AS A ON A.RESVE_NO = B.RESVE_NO
+        AND		A.MBER_ID = #{MBER_ID}
+        GROUP BY STRTPNT_ADRES , START_LC_CRDNT_X, START_LC_CRDNT_Y, STRTPNT_FULL_ADRES
+        ORDER BY MAX(B.RESVE_DT) DESC
+        LIMIT 10
+    </select>
+
+    <select id="endPointList" parameterType="hashmap" resultType="hashmap">
+        <!-- SELECT
+            ARVL_LC_CRDNT_X,
+            ARVL_LC_CRDNT_Y,
+            ALOC_ADRES
+        FROM (
+        SELECT
+            A.CNTER_CD,
+            A.MBER_ID,
+            MAX(A.RESVE_DT) AS RESVE_DT,
+            ARVL_LC_CRDNT_X,
+            ARVL_LC_CRDNT_Y,
+            ALOC_ADRES
+        FROM CARALC_HIST A
+        , RCEPT_HIST B
+        WHERE A.CNTER_CD = B.CNTER_CD
+        AND A.MBER_ID = B.MBER_ID
+        AND A.REGIST_DT = B.RESVE_DT
+        AND CARALC_STTUS_CD = '10'
+        AND A.MBER_ID = #{MBER_ID}
+        GROUP BY ALOC_ADRES , ARVL_LC_CRDNT_X, ARVL_LC_CRDNT_Y, CNTER_CD, MBER_ID
+        ) A
+        LEFT JOIN CARALC_HIST B ON B.MBER_ID = #{MBER_ID} AND A.MBER_ID = B.MBER_ID AND A.CNTER_CD = B.CNTER_CD AND A.RESVE_DT = B.RESVE_DT AND B.CARALC_STTUS_CD = '10'
+        ORDER BY B.SN DESC
+        LIMIT 10 -->
+        SELECT	ALOC_ADRES, ARVL_LC_CRDNT_X, ARVL_LC_CRDNT_Y, ALOC_FULL_ADRES
+        FROM RCEPT_HIST B
+        INNER JOIN (SELECT CH1.*
+        FROM CARALC_HIST CH1 LEFT JOIN CARALC_HIST CH2
+        ON (CH1.RESVE_NO = CH2.RESVE_NO AND CH1.SN <![CDATA[<]]> CH2.SN)
+        WHERE CH2.RESVE_NO IS NULL) AS A ON A.RESVE_NO = B.RESVE_NO
+        AND		A.MBER_ID = #{MBER_ID}
+        GROUP BY ALOC_ADRES, ARVL_LC_CRDNT_X, ARVL_LC_CRDNT_Y, ALOC_FULL_ADRES
+        ORDER BY MAX(B.RESVE_DT) DESC
+        LIMIT 10
+    </select>
+
+
+	<!-- 센터의 예약가능시간 조회 -->
+	<select id="getRceptPossibleTime" parameterType="hashmap" resultType="hashmap">
+		SELECT	CAST(TOM_RESVE_BEGIN_TIME AS DECIMAL(0)) AS TOM_RESVE_BEGIN_TIME
+		,			CAST(TOM_RESVE_END_TIME AS DECIMAL(0)) AS TOM_RESVE_END_TIME
+        ,			CAST(DAY_RESVE_BEGIN_TIME AS DECIMAL(0)) AS DAY_RESVE_BEGIN_TIME
+        ,			CAST(DAY_RESVE_END_TIME AS DECIMAL(0)) AS DAY_RESVE_END_TIME
+		FROM   	RESVE_POSSIBLE_TIME_SETUP_INFO
+		WHERE  	CNTER_CD = #{cnter_cd}
+		AND		RCEPT_SE_CD = #{rcept_se_cd}
+	</select>
+
+	<insert id="insertKobusRceptHist" parameterType="hashmap">
+    	INSERT
+    	INTO KOBUS_RCEPT_HIST
+    	VALUES (#{resve_no},#{resve_dt},#{mber_id},#{cnter_cd},#{run_type},#{boarding_time},#{require_time},'Y')
+    </insert>
+
+    <select id="getKobusRceptHist" parameterType="HashMap" resultType="HashMap">
+        SELECT  KRH.RESVE_NO, KRH.RESVE_DT, KRH.MBER_ID, KRH.CNTER_CD
+        FROM    KOBUS_RCEPT_HIST KRH
+        WHERE   KRH.MBER_ID = #{mber_id}
+        AND     KRH.CNTER_CD = #{cnter_cd}
+        AND     KRH.RESVE_DT = DATE_FORMAT(#{resve_dt}, '%Y-%m-%d %T')
+        AND     KRH.USE_YN = 'Y'
+    </select>
+
+    <update id="cancelKobusRceptHist" parameterType="hashmap">
+    	UPDATE  KOBUS_RCEPT_HIST
+        SET     USE_YN = 'N'
+        WHERE   RESVE_DT = DATE_FORMAT(#{resve_dt}, '%Y-%m-%d %T')
+        AND     MBER_ID = #{mber_id}
+        AND     CNTER_CD = #{cnter_cd}
+    </update>
+</mapper>

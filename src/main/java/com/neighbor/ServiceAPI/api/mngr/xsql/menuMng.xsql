@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="menuMng">
+	
+	<!-- 메뉴관리목록조회 -->
+	<select id="selectMenuMngList" parameterType="hashmap" resultType="hashmap">
+		SELECT C.* FROM 
+			(
+			SELECT @rownum := @rownum + 1 AS rnum, B.* FROM
+				(
+				SELECT 
+					MENU_ID, CNTNTS_URL AS CTNT_URL, MENU_NM AS MENU_NAME, UPPER_MENU_ID AS PARENT_MENU_ID, MENU_LEVEL, 
+					MENU_NO AS MENU_SEQ, MENU_SE AS MENU_GUBN, USE_AT AS USE_YN, CNTER_CD
+				FROM MENU_INFO, ( SELECT @rownum := 0 ) R
+				WHERE 1 = 1
+				AND CNTER_CD = #{CNTER_CD}
+				<if test="MENU_LEVEL != null">
+					AND MENU_LEVEL = #{MENU_LEVEL}	
+				</if>
+				<if test="USE_YN != null">
+					AND USE_AT = #{USE_YN}	
+				</if>
+				<if test="MENU_NAME != null">
+					AND MENU_NM LIKE CONCAT('%',#{MENU_NAME},'%')
+				</if>
+				ORDER BY MENU_NO DESC
+				) B
+			) C
+		<if test="page != null">
+			WHERE C.rnum BETWEEN (1 +(#{page}-1) * 10) AND (#{page}*10)	
+		</if>
+	</select>
+	
+	<!-- 메뉴관리목록 COUNT -->
+	<select id="selectMenuMngListCount" parameterType="hashmap" resultType="hashmap">
+		SELECT COUNT(*) AS CNT FROM MENU_INFO
+		WHERE 1 = 1
+			AND CNTER_CD = #{CNTER_CD}
+		<if test="MENU_LEVEL != null">
+			AND MENU_LEVEL = #{MENU_LEVEL}	
+		</if>
+		<if test="USE_YN != null">
+			AND USE_AT = #{USE_YN}	
+		</if>
+		<if test="MENU_NAME != null">
+			AND MENU_NM LIKE CONCAT('%',#{MENU_NAME},'%')
+		</if>
+	</select>
+	
+	<!-- 메뉴관리 상세 -->
+	<select id="selectMenuMngDetail" parameterType="hashmap" resultType="hashmap">
+		SELECT
+			A.MENU_ID, A.CNTNTS_URL AS CTNT_URL, A.MENU_NM AS MENU_NAME, A.UPPER_MENU_ID AS PARENT_MENU_ID, A.MENU_LEVEL,
+			A.MENU_NO AS MENU_SEQ, A.MENU_SE AS MENU_GUBN, A.USE_AT AS USE_YN, A.CNTER_CD 
+		FROM MENU_INFO A
+		WHERE A.MENU_ID = #{MENU_ID}
+			AND A.CNTER_CD = #{CNTER_CD}
+	</select>
+	
+	<!-- 메뉴관리 등록 -->
+	<insert id="menuMngInsert" parameterType="hashmap">
+		INSERT INTO MENU_INFO
+			(
+				MENU_LEVEL, UPPER_MENU_ID, MENU_ID, MENU_NM, MENU_NO, MENU_SE, 
+				<if test="CTNT_URL != null">
+		  			CNTNTS_URL, 
+        		</if>
+        		USE_AT, CNTER_CD
+		 	)
+		VALUES 
+			(
+				#{MENU_LEVEL}, #{PARENT_MENU_ID}, #{MENU_ID}, #{MENU_NAME}, #{MENU_SEQ}, #{MENU_GUBN},
+				<if test="CTNT_URL != null">
+		  			#{CTNT_URL}, 
+        		</if>
+        		#{USE_YN}, #{CNTER_CD}
+			)
+	</insert>
+	
+	<!-- 메뉴관리 수정 -->
+	<update id="menuMngUpdate" parameterType="hashmap">
+		UPDATE MENU_INFO SET
+			MENU_LEVEL = #{MENU_LEVEL}, 
+			UPPER_MENU_ID = #{PARENT_MENU_ID},
+			MENU_NM = #{MENU_NAME}, 
+			MENU_NO = #{MENU_SEQ}, 
+			MENU_SE = #{MENU_GUBN}, 
+			<if test="CTNT_URL != null">
+	  			CNTNTS_URL = #{CTNT_URL}, 
+    		</if>
+    		USE_AT = #{USE_YN}	
+		WHERE MENU_ID = #{MENU_ID}
+		AND   CNTER_CD = #{CNTER_CD}
+	</update>
+	
+	<!-- 메뉴관리 사용중지 -->
+	<update id="menuMngDelete" parameterType="hashmap">
+		UPDATE MENU_INFO SET
+			USE_AT = 'N'
+    	WHERE MENU_ID IN 
+    	<foreach item="item" collection="array" open="(" separator="," close=")">
+			#{item}
+		</foreach>
+		AND CNTER_CD = #{CNTER_CD}
+	</update>
+	
+	<!-- 메뉴관리 삭제 -->
+	<delete id="menuMngDelete2" parameterType="hashmap">
+		DELETE FROM MENU_INFO
+		WHERE MENU_ID IN
+		<foreach item="item" collection="array" open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</delete>
+	
+	<!-- 메뉴관리권한 삭제 -->
+	<delete id="menuMngAccessDelete" parameterType="hashmap">
+		DELETE FROM MENU_ACCES_AUTHOR_INFO
+		WHERE MENU_ID IN
+		<foreach item="item" collection="array" open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</delete>
+	
+	<delete id="menuMngAccessDelete2" parameterType="hashmap">
+		DELETE FROM MENU_ACCES_AUTHOR_INFO
+		WHERE MENU_ID = #{MENU_ID}
+		AND   CNTER_CD = #{CNTER_CD}
+	</delete>
+	
+	<!-- 메뉴ID 중복체크 -->
+	<select id="menuMngDoubleChk" parameterType="hashmap" resultType="hashmap">
+		SELECT COUNT(*) AS CNT 
+		FROM MENU_INFO
+		WHERE MENU_ID = #{MENU_ID}
+		AND   CNTER_CD = #{CNTER_CD}
+	</select>
+	
+	<!-- 메뉴관리권한목록 -->
+	<select id="selectMenuMngAccessList" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+			A.CD_VALUE AS CD_VAL, A.CD_VALUE_DE AS CD_VAL_DESC, 
+			IFNULL(B.USE_AUTHOR_CD,'00') AS ACCESS_CD
+		FROM CMMN_CD_VALUE_INFO A
+		LEFT JOIN (SELECT * FROM MENU_ACCES_AUTHOR_INFO WHERE MENU_ID = #{MENU_ID}) B ON A.CD_VALUE = B.MBER_SE_CD
+		WHERE A.CD_ID='MBER_SE_CD'
+	</select>
+	
+	<!-- 메뉴관리권한 추가 -->
+	<insert id="menuMngAccessInsert" parameterType="hashmap">
+		INSERT INTO MENU_ACCES_AUTHOR_INFO
+			(
+				MBER_SE_CD, MENU_ID, USE_AUTHOR_CD, CNTER_CD
+			)
+		VALUES
+			(
+				#{USER_GUBUN_CD}, #{MENU_ID}, #{ACCESS_CD}, #{CNTER_CD}
+			)
+		ON DUPLICATE KEY UPDATE
+			CNTER_CD = #{CNTER_CD} , MENU_ID  = #{MENU_ID} , MBER_SE_CD = #{USER_GUBUN_CD}, USE_AUTHOR_CD = #{ACCESS_CD}
+	</insert>
+	
+	<!-- 대메뉴목록조회 -->
+	<select id="menuMngSelectboxList" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+			A.MENU_ID, A.CNTNTS_URL AS CTNT_URL, A.MENU_NM AS MENU_NAME, A.UPPER_MENU_ID AS PARENT_MENU_ID, A.MENU_LEVEL,
+			A.MENU_NO AS MENU_SEQ, A.MENU_SE AS MENU_GUBN, A.USE_AT AS USE_YN, A.CNTER_CD,
+			B.CNTNTS_NO, B.CNTNTS_MLSFC_CD AS CNTNTS_TYPE2_CD, B.CNTNTS_SCLAS_CD AS CNTNTS_CLS_CD
+		FROM MENU_INFO A
+			LEFT OUTER JOIN CNTNTS_INFO B ON A.MENU_ID = B.MENU_ID AND A.CNTNTS_NO = B.CNTER_CD
+		WHERE 1 = 1
+		AND A.CNTER_CD = #{CNTER_CD}
+		<if test="MENU_LEVEL != null">
+			AND A.MENU_LEVEL = #{MENU_LEVEL}	
+		</if>
+		<if test="MENU_GUBN != null">
+			AND A.MENU_SE = #{MENU_GUBN}
+		</if>
+		<if test="PARENT_MENU_ID != null">
+			AND A.UPPER_MENU_ID != #{PARENT_MENU_ID}
+			AND A.MENU_ID NOT IN (SELECT MENU_ID FROM CNTNTS_INFO)
+		</if>
+		<if test="BOARD_YN != null">
+			AND A.MENU_ID IN (SELECT MENU_ID FROM CNTNTS_INFO WHERE CNTNTS_LCLAS_CD = '20')
+		</if>
+		ORDER BY MENU_NO
+	</select>
+</mapper>

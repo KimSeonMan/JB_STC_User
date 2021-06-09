@@ -1,0 +1,133 @@
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neighbor.ServiceAPI.dao.mapper.drverInfo">
+	<resultMap id="drverInfo" type="drverInfo">
+		<result property="mber_id" column="MBER_ID"/>
+		<result property="cnter_cd" column="CNTER_CD"/>
+		<result property="drver_sttus_cd" column="DRVER_STTUS_CD"/>
+	</resultMap>
+	<select id="getDriver" parameterType="drverInfo" resultType="drverInfo">
+		SELECT 
+			MBER_ID 
+		    , CNTER_CD 
+		    , DRVER_STTUS_CD 
+		    , VHCLE_NO 
+		    , WORK_DE 
+		    , WORK_TMZON 
+		    , RM 
+		FROM DRVER_INFO
+		WHERE CNTER_CD = #{cnter_cd}
+		AND MBER_ID = #{mber_id}
+	</select>
+	<update id="updateDriver" parameterType="drverInfo">
+		UPDATE DRVER_INFO SET
+			DRVER_STTUS_CD = #{drver_sttus_cd}
+		WHERE 
+			CNTER_CD = #{cnter_cd}
+			AND MBER_ID = #{mber_id}
+	</update>
+	
+	<update id="setVhcleNo" parameterType="drverInfo">
+		UPDATE DRVER_INFO SET
+			VHCLE_NO = #{vhcle_no}
+		WHERE 
+			CNTER_CD = #{cnter_cd}
+			AND MBER_ID = #{mber_id}
+	</update>
+	
+	<update id="setVhcleNo2" parameterType="HashMap">
+		UPDATE DRVER_INFO SET
+			VHCLE_NO = null
+		WHERE MBER_ID = #{mber_id}
+	</update>
+	
+	<select id="getDrverInfoByCnter" parameterType="HashMap" resultType="HashMap">
+		SELECT 
+	    	Y.*
+		FROM
+		    (SELECT 
+		        X.*, @rownum:=@rownum+1 as rnum
+		    FROM
+				(
+		
+				SELECT DRVER.CNTER_CD 
+					, DRVER.MBER_ID	
+				    , DRVER.DRVER_STTUS_CD	
+				    , DRVER.VHCLE_NO 
+				    , DRVER.WORK_DE 
+				    , DRVER.WORK_TMZON 
+				    , DRVER.RM 
+				    , CNTER.CNTER_NM 
+				    , MBER.MBER_NM 
+				    , MBER.MBTLNUM 
+				    , DRLC.LC_CRDNT_X 
+				    , DRLC.LC_CRDNT_Y 
+				FROM DRVER_INFO DRVER
+					, CNTER_INFO CNTER
+					, MBER_INFO MBER
+					, DRVER_LC_HIST DRLC
+					, (SELECT @rownum:=0)TMP
+				WHERE DRVER.CNTER_CD = CNTER.CNTER_CD
+					AND DRVER.CNTER_CD = MBER.CNTER_CD
+				    AND DRVER.MBER_ID = MBER.MBER_ID
+					AND DRVER.CNTER_CD = DRLC.CNTER_CD
+				    AND DRVER.MBER_ID = DRLC.MBER_ID
+				    AND DRVER.CNTER_CD = #{cnter_cd}
+				    AND DRVER.DRVER_STTUS_CD = #{drver_sttus_cd}
+				    <if test="drver_nm!=null">
+				    AND MBER.MBER_NM = #{mber_nm}
+				    </if>
+				  ) X
+			WHERE
+	        	@rownum <![CDATA[<=]]> #{end_idx} ) Y
+		WHERE
+	   		rnum <![CDATA[>]]> #{start_idx}
+	</select>
+	<select id="getMapPois" parameterType="HashMap" resultType="HashMap">
+		SELECT 
+			DRVHIST.LC_CRDNT_X AS X
+		    , DRVHIST.LC_CRDNT_Y AS Y
+		    , MBER.MBER_NM AS DRIVER_NAME
+		    , MBER.MBTLNUM AS DRIVER_TEL
+		    , CNTINFO.CNTER_NM AS CENTER_NAME
+		    , case	
+				when DRVINFO.DRVER_STTUS_CD = 00
+				THEN '실차'
+		        when DRVINFO.DRVER_STTUS_CD = 30
+		        THEN '실차'
+		        ELSE '공차'
+		        end as DRVER_STTUS_CD
+			, (SELECT MBER_NM FROM MBER_INFO WHERE MBER_ID = CARALC_HIST.MBER_ID) AS USER_NM
+		    , (SELECT MBTLNUM FROM MBER_INFO WHERE MBER_ID = CARALC_HIST.MBER_ID) AS USER_TEL
+			, (SELECT CD_VALUE_DE FROM CMMN_CD_VALUE_INFO
+				WHERE CD_ID = 'WHEELCHAIR_FIXING_STTUS_CD'
+				AND CD_VALUE=DRVHIST.WHEELCHAIR_FIXING_STTUS_CD) AS NOTE    
+		FROM DRVER_INFO DRVINFO
+			LEFT JOIN CARALC_HIST
+		    ON DRVINFO.VHCLE_NO = CARALC_HIST.VHCLE_NO
+			, MBER_INFO MBER
+		    , DRVER_LC_HIST DRVHIST
+		    , (SELECT MBER_ID, MAX(COLCT_DT) AS COLCT_DT
+				FROM DRVER_LC_HIST
+				GROUP BY MBER_ID) LCHIST
+			, CNTER_INFO CNTINFO
+		WHERE DRVINFO.MBER_ID = MBER.MBER_ID 
+		AND DRVINFO.MBER_ID = DRVHIST.MBER_ID
+		AND DRVHIST.MBER_ID = LCHIST.MBER_ID
+		AND DRVHIST.COLCT_DT = LCHIST.COLCT_DT
+		AND CNTINFO.CNTER_CD = DRVINFO.CNTER_CD
+		AND DRVINFO.DRVER_STTUS_CD = #{drver_sttus_cd}
+		AND DRVINFO.CNTER_CD = #{cnter_cd}
+		<if test="drver_nm != null">
+		AND MBER.MBER_NM = #{drver_nm}
+		</if>
+	</select>
+	
+	<select id="getDrverCount" parameterType="HashMap" resultType="java.lang.String">
+		SELECT MBER_ID
+		FROM DRVER_INFO
+		WHERE VHCLE_NO = #{vhcle_no}
+	</select>
+	
+</mapper>

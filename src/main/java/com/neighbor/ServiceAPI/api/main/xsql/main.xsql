@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="main">
+
+	<!-- 공지사항리스트 리미트 6 -->
+	<select id="selectNoticeList" parameterType="hashmap" resultType="hashmap">
+		SELECT
+			SJ AS TITLE
+			, NTT_NO AS NOTICE_NO
+			, NOTICE_CLS_CD 
+			, CNTNTS_NO
+			, RDCNT AS HIT_CNT
+			, IFNULL(DATE_FORMAT(REGIST_DT, '%Y.%m.%d'),'') AS REG_TS
+		FROM NOTICE_INFO
+		WHERE 1=1
+		AND NOTICE_CLS_CD = '10'
+		AND CNTER_CD = 'NAT-1-001'
+		ORDER BY NTT_NO DESC LIMIT 6
+	</select>
+	
+	<!-- 보도자료리스트 리미트 6 -->
+	<select id="selectReportList" parameterType="hashmap" resultType="hashmap">
+		SELECT
+			SJ AS TITLE
+			, NTT_NO AS NOTICE_NO
+			, NOTICE_CLS_CD 
+			, CNTNTS_NO
+			, RDCNT AS HIT_CNT
+			, IFNULL(DATE_FORMAT(REGIST_DT, '%Y.%m.%d'),'') AS REG_TS
+		FROM NOTICE_INFO
+		WHERE 1=1
+		AND NOTICE_CLS_CD = '20'
+		AND CNTER_CD = 'NAT-1-001'
+		ORDER BY NTT_NO DESC LIMIT 6
+	</select>
+	
+	<!-- QA리스트 리미트 6 -->
+	<select id="selectQAList" parameterType="hashmap" resultType="hashmap">
+		SELECT
+			SJ AS TITLE
+			, NTT_NO AS NOTICE_NO
+            , CNTNTS_NO
+            , BOARD_CLS_CD AS NOTICE_CLS_CD
+			, RDCNT AS HIT_CNT
+			, IFNULL(DATE_FORMAT(REGIST_DT, '%Y.%m.%d'),'') AS REG_TS
+		FROM BBS_INFO
+		WHERE 1 = 1 
+		AND CNTER_CD = 'NAT-1-001'
+		AND BOARD_CLS_CD = '10'
+		ORDER BY INDENT DESC, LEVEL, REGIST_DT DESC LIMIT 6
+	</select>
+	
+	<select id="selectContentsInfo" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+		A.CNTNTS_NO, A.MENU_ID, A.CNTNTS_LCLAS_CD AS CNTNTS_TYPE1_CD, A.CNTNTS_MLSFC_CD AS CNTNTS_TYPE2_CD, A.CNTNTS_SCLAS_CD AS CNTNTS_CLS_CD,
+		 A.CN AS CNTNTS_CTNT, A.ATCHMNFL_AT AS FILE_YN, A.ATCHMNFL_CO AS FILE_CNT, A.ATCHMNFL_MXMM_CPCTY AS FILE_MAX_QTY, A.ATCHMNFL_EVENTN AS FILE_EXT, A.CNTER_CD,
+		B.MENU_NM AS MENU_NAME 
+		FROM CNTNTS_INFO A
+			LEFT OUTER JOIN MENU_INFO B ON A.MENU_ID = B.MENU_ID AND A.CNTNTS_NO = B.CNTER_CD
+		WHERE A.MENU_ID = #{gubn}
+		AND A.CNTER_CD = #{CNTER_CD}
+	</select>
+	
+	
+	<!-- 설문조사관리 리스트 -->	
+	<select id="selectQestnarList" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+			B.SURVEY_ID, B.SURVEY_TITLE, 
+			IFNULL(DATE_FORMAT(B.SURVEY_ST_DATE, '%Y-%m-%d'),'') AS SURVEY_ST_DATE,
+			IFNULL(DATE_FORMAT(B.SURVEY_EN_DATE, '%Y-%m-%d'),'') AS SURVEY_EN_DATE,
+			B.TARGET_USER_CD, B.MAIN_VIEW_YN, B.SURVEY_REMARK,
+			A.SURVEY_SEQ, A.SURVEY_TYPE_CD, A.SURVEY_CHOICE_CD, A.SURVEY_GBN_CD, A.SURVEY_CTNT
+		FROM SURVEY_INFO A, 
+			(SELECT * FROM SURVEY
+			 WHERE SURVEY_EN_DATE > now() 
+			 ORDER BY REG_TS DESC LIMIT 1) B
+		WHERE A.SURVEY_ID = B.SURVEY_ID
+		ORDER BY A.SURVEY_SEQ
+	</select>
+
+
+
+    	<select id="selectMemberShipInfo" parameterType="hashmap" resultType="hashmap">
+            SELECT CN
+            FROM MBER_STPLAT_INFO
+            WHERE CNTER_CD = #{cnter_cd}
+            AND STPLAT_SE_CD = '30'
+    	</select>
+
+    	<insert id="insertKobusApiLog" parameterType="hashmap">
+            INSERT
+            INTO KOBUS_API_LOG (CALL_DT,API_URL,PARAM,ACCESS_IP)
+            VALUES (NOW(),#{api_url},#{req_param},#{acc_ip})
+        </insert>
+</mapper>

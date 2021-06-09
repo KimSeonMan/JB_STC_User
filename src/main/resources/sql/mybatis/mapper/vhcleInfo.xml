@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neighbor.ServiceAPI.dao.mapper.vhcleInfo">
+	<resultMap type="vhcleInfo" id="vhcleInfo">
+		<result property="vhcle_no" column="VHCLE_NO"/>
+		<result property="resve_vhcle_at" column="RESVE_VHCLE_AT"/>
+		<result property="copertn_caralc_at" column="COPERTN_CARALC_AT"/>
+		<result property="vhcle_ty_cd" column="VHCLE_TY_CD"/>
+		<result property="modl_nm" column="MODL_NM"/>
+		<result property="makr" column="MAKR"/>
+		<result property="mxmm_brdng_nmpr" column="MXMM_BRDNG_NMPR"/>
+		<result property="yridnw" column="YRIDNW"/>
+		<result property="vin" column="VIN"/>
+		<result property="use_at" column="USE_AT"/>
+		<result property="rm" column="RM"/>
+		<result property="register_id" column="REGISTER_ID"/>
+		<result property="regist_dt" column="REGIST_DT"/>
+	</resultMap>
+	<select id="selectVhcleInfo" parameterType="java.lang.String" resultType="vhcleInfo">
+		SELECT 
+			VHCLE_NO
+			, RESVE_VHCLE_AT
+			, COPERTN_CARALC_AT 
+			, VHCLE_TY_CD 
+			, MODL_NM 
+			, MAKR 
+			, MXMM_BRDNG_NMPR 
+			, YRIDNW 
+			, VIN 
+			, USE_AT
+			, REGISTER_ID 
+			, REGIST_DT 
+		FROM VHCLE_INFO
+		WHERE VHCLE_NO = #{vhcle_no}
+	</select>
+	
+	<select id="getCarDetail" parameterType="java.lang.String" resultType="vhcleInfo">
+		SELECT 
+			VHCLE_NO
+			, RESVE_VHCLE_AT 
+			, COPERTN_CARALC_AT 
+			, VHCLE_TY_CD 
+			, MODL_NM 
+			, MAKR
+			, MXMM_BRDNG_NMPR 
+			, YRIDNW 
+			, VIN 
+			, USE_AT 
+			, REGISTER_ID A
+			, REGIST_DT 
+		FROM VHCLE_INFO
+		<if test="value != null">
+		WHERE VHCLE_NO = #{vhcle_no}
+		</if>
+	</select>
+	
+		<select id="getCarList" parameterType="vhcleInfo" resultType="vhcleInfo">
+		
+		SELECT 
+	    	Y.*
+		FROM
+		    (SELECT 
+		        X.*, @rownum:=@rownum+1 as rnum
+		    FROM
+				(
+					SELECT 
+						VHCLE.VHCLE_NO
+						, VHCLE.RESVE_VHCLE_AT 
+						, VHCLE.COPERTN_CARALC_AT 
+						, VHCLE.VHCLE_TY_CD 
+						, VHCLE.MODL_NM 
+						, VHCLE.MAKR 
+						, VHCLE.MXMM_BRDNG_NMPR 
+						, VHCLE.YRIDNW 
+						, VHCLE.VIN 
+						, VHCLE.USE_AT 
+						, MBER.MBER_NM
+					FROM VHCLE_INFO VHCLE
+						, DRVER_INFO DRVER
+						, MBER_INFO MBER
+						, (SELECT @rownum:=0)TMP
+					WHERE VHCLE.VHCLE_NO = DRVER.VHCLE_NO
+						AND DRVER.MBER_ID = MBER.MBER_ID
+					<if test="resve_vhcle_at != null">
+						AND VHCLE.RESVE_VHCLE_AT = #{resve_vhcle_at}
+					</if>
+					<if test="copertn_carcle_at != null">
+						AND VHCLE.COPERTN_CARALC_AT = #{copertn_carcle_at}
+					</if>
+					<if test="vhcle_ty_cd != null">
+						AND VHCLE.VHCLE_TY_CD = #{vhcle_ty_cd}
+					</if>
+					<if test="drver_nm != null">
+						AND MBER.DRVER_NM = #{drver_nm}
+					</if>
+					<if test="vhcle_no != null">
+						AND VHCLE.VHCLE_NO = #{vhcle_no}
+					</if>
+				) X
+			WHERE
+	        	@rownum <![CDATA[<=]]> #{end_idx} ) Y
+		WHERE
+	   		rnum <![CDATA[>]]> #{start_idx}
+	</select>
+	
+	<insert id="inserCar" parameterType="vhcleInfo">
+	INSERT INTO VHCLE_INFO
+	(VHCLE_NO, RESVE_VHCLE_AT, COPERTN_CARALC_AT, VHCLE_TY_CD, MODL_NM, MAKR
+		, MXMN_BRDNG_NMPR, YRUDNW, VIN, USE_AT, REGISTER_ID, REGIST_DT)
+		VALUES
+	(#{vhcle_no}, #{resve_vhcle_at}, #{copertn_caralc_at}, #{vhcle_ty_cd}, #{modl_nm}, #{makr}
+	, #{mxmm_brdng_nmpr}, #{yridnw}, #{vin}, #{use_at}, #{register_id}, STR_TO_DATE(#{regist_dt}, '%Y%m%d%H%i')
+	)
+	</insert>
+	
+	<update id="updateCar" parameterType="vhcleInfo">
+		UPDATE VHCLE_INFO
+		SET
+		VHCLE_TY_CD = #{vhcle_ty_cd}
+		<if test="resve_vhcle_at">
+			,RESVE_VHCLE_AT = #{resve_vhcle_at}
+		</if>
+		<if test="copertn_caralc_at != null">
+			, COPERTN_CARALC_AT = #{copertn_caralc_at}
+		</if>
+		<if test="modl_nm">
+			, MODL_NM = #{modl_nm}
+		</if>
+		<if test="makr!=null">
+			, MAKR = #{makr}
+		</if>
+		<if test="mxmm_brdng_nmpr">
+			, MXMM_BRDNG_NMPR = #{mxmm_brdng_nmpr}
+		</if>
+		<if test="yridnw!=null">
+			, YRIDNW = #{yridnw}
+		</if>
+		<if test="vin!=null">
+			, VIN = #{vin}
+		</if>
+		WHERE 
+			VHCLE_NO = #{vhcle_no}
+	</update>
+	
+	<delete id="deleteCar" parameterType="java.lang.String" >
+		DELETE FROM VHCLE_INFO
+		WHERE VHCLE_NO = #{vhcle_no}
+	</delete>
+
+	<select id="getSolati" parameterType="java.lang.String" resultType="vhcleInfo">
+		SELECT	VHCLE_NO
+				, RESVE_VHCLE_AT
+				, COPERTN_CARALC_AT
+				, VHCLE_TY_CD
+				, MODL_NM
+				, MAKR
+				, MXMM_BRDNG_NMPR
+				, YRIDNW
+				, VIN
+				, USE_AT
+				, REGISTER_ID A
+				, REGIST_DT
+		FROM	VHCLE_INFO
+		WHERE	USE_AT = 'Y'
+		AND		VHCLE_TY_CD = '50'
+		AND		CNTER_CD = #{chrg_cnter_cd}
+		LIMIT	1
+	</select>
+
+</mapper>

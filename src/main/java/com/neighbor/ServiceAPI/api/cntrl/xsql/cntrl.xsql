@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cntrl">
+
+	<!-- 차량위치관제현황  -->
+	<select id="cntrlSearchCarWordList" parameterType="hashmap" resultType="hashmap">
+		SELECT C.* FROM 
+			(
+			SELECT @rownum := @rownum + 1 AS rnum, B.* FROM
+					(
+					SELECT 
+						A.CAR_NO, A.USER_ID, B.X, B.Y, B.FULLNAME, C.NAME, C.PHONE
+					FROM CAR A
+						LEFT OUTER JOIN CAR_LOC_HIST B ON A.CAR_NO = B.CAR_NO
+						LEFT OUTER JOIN USER C ON A.USER_ID = C.USER_ID,
+						( SELECT @rownum := 0 ) R		
+					WHERE B.GPS_YN = 'Y'
+						AND SUBSTR(B.LOC_LOCATIONCODE,1,2) = #{searchLocation}
+						<if test="searchWord !=null">
+							AND A.CAR_NO = #{searchWord}
+						</if>
+				) B
+			) C
+			WHERE C.rnum BETWEEN ${startRow} AND ${endRow}
+	</select>
+	
+	<!-- 차량 위치 리시트 불러오기 -->
+	<select id="cntrlSearchCarMarkerList" parameterType="hashmap" resultType="hashmap">
+		SELECT C.* FROM 
+			(
+			SELECT @rownum := @rownum + 1 AS rnum, B.* FROM
+					(
+					SELECT 
+						A.CAR_NO, A.USER_ID, B.X, B.Y, B.FULLNAME, C.NAME, C.PHONE
+					FROM CAR A
+						LEFT OUTER JOIN CAR_LOC_HIST B ON A.CAR_NO = B.CAR_NO
+						LEFT OUTER JOIN USER C ON A.USER_ID = C.USER_ID,
+						( SELECT @rownum := 0 ) R		
+					WHERE B.GPS_YN = 'Y'
+						AND SUBSTR(B.LOC_LOCATIONCODE,1,2) = #{searchLocation}
+						<if test="searchWord !=null">
+							AND A.CAR_NO = #{searchWord}
+						</if>
+				) B
+			) C
+	</select>
+	
+	<!-- 차량위치관제현황 총 개수 -->
+	<select id="cntrlSearchCarWordCount" parameterType="hashmap" resultType="java.lang.Integer">
+		select count(*) 
+			FROM CAR_LOC_HIST 
+			where GPS_YN = 'Y' 
+				AND SUBSTR(LOC_LOCATIONCODE,1,2) = #{searchLocation}
+			<if test="searchWord !=null">
+				AND CAR_NO = #{searchWord}
+			</if>
+			
+	</select>
+	
+	<select id="cntrlSearchWordSupportList" parameterType="hashmap" resultType="hashmap">
+	
+	</select>
+	
+	<select id="cntrlSearchWordUserList" parameterType="hashmap" resultType="hashmap">
+	
+	</select>
+	
+</mapper>

@@ -1,0 +1,684 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans    http://www.springframework.org/schema/beans/spring-beans-3.2.xsd">
+
+	<!-- 메인, API 1000 -->
+	<bean name="/ServiceAPI/main/mainList.*" class="com.neighbor.ServiceAPI.api.main.MainController">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 로그인, API 1100 -->
+	<bean name="/ServiceAPI/login/Login.*" class="com.neighbor.ServiceAPI.api.login.Login">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+	<!-- 로그아웃, API 1101 -->
+	<bean name="/ServiceAPI/login/LogOut.*" class="com.neighbor.ServiceAPI.api.login.LogOut">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 세션, API 1102 -->
+	<bean name="/ServiceAPI/login/Session.*" class="com.neighbor.ServiceAPI.common.controller.SessionInfo">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 코드목록 조회, API 1103 -->
+	<bean name="/ServiceAPI/code/CodeSearch.*" class="com.neighbor.ServiceAPI.api.common.CodeInfo">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 코드상세목록 조회, API 1104 -->
+	<bean name="/ServiceAPI/code/CodeDetailSearch.*" class="com.neighbor.ServiceAPI.api.common.CodeDetailInfo">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 메뉴 조회, API 1105 -->
+	<bean name="/ServiceAPI/common/MenuList.*" class="com.neighbor.ServiceAPI.api.common.MenuInfo">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 회원가입 신청, API 1106 -->
+	<bean name="/ServiceAPI/login/MemberShipAdd.*" class="com.neighbor.ServiceAPI.api.login.MemberShipAdd">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 마이페이지, API 1107 -->
+	<bean name="/ServiceAPI/login/MyPage.*" class="com.neighbor.ServiceAPI.api.login.MyPage">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 회원정보 수정, API 1108 -->
+	<bean name="/ServiceAPI/login/MemberShipUpdate.*" class="com.neighbor.ServiceAPI.api.login.MemberShipUpdate">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 회원탈퇴, API 1109 -->
+	<bean name="/ServiceAPI/login/MemberShipDelete.*" class="com.neighbor.ServiceAPI.api.login.MemberShipDelete">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 파일 업로드, API 1110 -->
+	<bean name="/ServiceAPI/file/fileUpload.*" class="com.neighbor.ServiceAPI.api.common.FileUpload">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 회원 조회 팝업, API 1111 -->
+	<bean name="/ServiceAPI/common/userSearch.*" class="com.neighbor.ServiceAPI.api.common.UserSearch">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 회원ID중복체크, API 1112 -->
+	<bean name="/ServiceAPI/login/memberIDDoubleAddChk.*"
+		class="com.neighbor.ServiceAPI.api.login.MemberIDDoubleAddChk">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 회원ID 찾기, API 1113 -->
+	<bean name="/ServiceAPI/login/findLoginId.*"
+		class="com.neighbor.ServiceAPI.api.login.FindLoginId">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 회원 PW 찾기, API 1113 -->
+	<bean name="/ServiceAPI/login/findLoginPw.*"
+		class="com.neighbor.ServiceAPI.api.login.FindLoginPw">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+
+	<!-- 관리자 관리 -->
+	<!-- 회원 관리 목록, API 1200 시작 -->
+	<bean name="/ServiceAPI/bassInfo/userMnglist.*" class="com.neighbor.ServiceAPI.api.bassInfo.UserMngList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+	
+	<!-- 회원 목록 ExcelDown, API 1200 시작 -->
+	<bean name="/ServiceAPI/bassInfo/userExcelDown.*" class="com.neighbor.ServiceAPI.api.bassInfo.UserListExcelDown">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 회원 관리 상세, API 1201 시작 -->
+	<bean name="/ServiceAPI/bassInfo/userMngDetail.*" class="com.neighbor.ServiceAPI.api.bassInfo.UserMngDetail">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 회원가입 승인, API 1202 시작 -->
+	<bean name="/ServiceAPI/bassInfo/userMngUpdate.*" class="com.neighbor.ServiceAPI.api.bassInfo.UserMngUpdate">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+	
+	<!-- 회원등록 코드 리스트 호출 -->
+	<bean name="/ServiceAPI/bassInfo/userCodeList.*" class="com.neighbor.ServiceAPI.api.bassInfo.UserCodeList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 메뉴관리목록조회, API 1203 시작 -->
+	<bean name="/ServiceAPI/mngr/menuMngList.*" class="com.neighbor.ServiceAPI.api.mngr.MenuMngList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 메뉴관리등록, API 1204 시작 -->
+	<bean name="/ServiceAPI/mngr/menuMngAdd.*" class="com.neighbor.ServiceAPI.api.mngr.MenuMngAdd">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 메뉴관리 메뉴ID 중복체크, API 1205 시작 -->
+	<bean name="/ServiceAPI/mngr/menuMngDoubleAddChk.*" class="com.neighbor.ServiceAPI.api.mngr.MenuMngDoubleAddChk">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 메뉴관리삭제, API 1206 시작 -->
+	<bean name="/ServiceAPI/mngr/menuMngDelete.*" class="com.neighbor.ServiceAPI.api.mngr.MenuMngDelete">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 메뉴관리상세, API 1207 시작 -->
+	<bean name="/ServiceAPI/mngr/menuMngDetail.*" class="com.neighbor.ServiceAPI.api.mngr.MenuMngDetail">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 메뉴관리수정, API 1208 시작 -->
+	<bean name="/ServiceAPI/mngr/menuMngUpdate.*" class="com.neighbor.ServiceAPI.api.mngr.MenuMngUpdate">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 메뉴관리권한팝업, API 1209 시작 -->
+	<bean name="/ServiceAPI/mngr/menuMngAccessList.*" class="com.neighbor.ServiceAPI.api.mngr.MenuMngAccessList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 메뉴관리권한 등록/변경, API 1210 시작 -->
+	<bean name="/ServiceAPI/mngr/menuMngAccessAdd.*" class="com.neighbor.ServiceAPI.api.mngr.MenuMngAccessAdd">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 대메뉴목록 , API 1211 시작 -->
+	<bean name="/ServiceAPI/mngr/menuMngSelectboxList.*" class="com.neighbor.ServiceAPI.api.mngr.MenuMngSelectboxList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 정보컨텐츠관리 목록 조회, API 1212 시작 -->
+	<bean name="/ServiceAPI/mngr/contentsMngList.*" class="com.neighbor.ServiceAPI.api.mngr.ContentsMngList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 정보컨텐츠관리 등록, API 1213 시작 -->
+	<bean name="/ServiceAPI/mngr/contentsMngAdd.*" class="com.neighbor.ServiceAPI.api.mngr.ContentsMngAdd">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 정보컨텐츠관리 수정, API 1214 시작 -->
+	<bean name="/ServiceAPI/mngr/contentsMngUpdate.*" class="com.neighbor.ServiceAPI.api.mngr.ContentsMngUpdate">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 정보컨텐츠관리 삭제, API 1215 시작 -->
+	<bean name="/ServiceAPI/mngr/contentsMngDelete.*" class="com.neighbor.ServiceAPI.api.mngr.ContentsMngDelete">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 정보컨텐츠관리 상세, API 1216 시작 -->
+	<bean name="/ServiceAPI/mngr/contentsMngDetail.*" class="com.neighbor.ServiceAPI.api.mngr.ContentsMngDetail">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 파일 다운로드, API 1218 -->
+	<bean name="/ServiceAPI/mngr/fileDown.*" class="com.neighbor.ServiceAPI.api.mngr.FileDownload">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 컨텐츠정보관리 운영자용 게시판관리 -->
+	<!-- 공지사항목록조회, API 1220 -->
+	<bean name="/ServiceAPI/mngr/noticeList.*"
+		class="com.neighbor.ServiceAPI.api.userSiteTemplate.NoticeList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 공지사항등록가능메뉴확인, API 1221 -->
+	<bean name="/ServiceAPI/mngr/noticeAddConfirm.*"
+		class="com.neighbor.ServiceAPI.api.userSiteTemplate.NoticeAddConfirm">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 공지사항등록, API 1222 -->
+	<bean name="/ServiceAPI/mngr/noticeAdd.*"
+		class="com.neighbor.ServiceAPI.api.userSiteTemplate.NoticeAdd">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 공지사항삭제, API 1223 -->
+	<bean name="/ServiceAPI/mngr/noticeDelete.*"
+		class="com.neighbor.ServiceAPI.api.userSiteTemplate.NoticeDelete">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 공지사항상세, API 1224 -->
+	<bean name="/ServiceAPI/mngr/noticeDetail.*"
+		class="com.neighbor.ServiceAPI.api.userSiteTemplate.NoticeDetail">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 공지사항수정, API 1225 시작 -->
+	<bean name="/ServiceAPI/mngr/noticeUpdate.*"
+		class="com.neighbor.ServiceAPI.api.userSiteTemplate.NoticeUpdate">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- QA답글작성, API 1226 시작 -->
+	<bean name="/ServiceAPI/mngr/replyList.*"
+		class="com.neighbor.ServiceAPI.api.userSiteTemplate.ReplyList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- QA답글등록, API 1227 시작 -->
+	<bean name="/ServiceAPI/mngr/replyAdd.*" class="com.neighbor.ServiceAPI.api.userSiteTemplate.ReplyAdd">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+
+	<!-- 공통코드목록조회, API 1228 시작 -->
+	<bean name="/ServiceAPI/system/commonCDMnglistA.*" class="com.neighbor.ServiceAPI.api.system.CommonCDMngListA">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 공통코드상세목록조회, API 1229 시작 -->
+	<bean name="/ServiceAPI/system/commonCDMnglistB.*" class="com.neighbor.ServiceAPI.api.system.CommonCDMngListB">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 공통코드상세, API 1230 시작 -->
+	<bean name="/ServiceAPI/system/commonCDMngDetail.*" class="com.neighbor.ServiceAPI.api.system.CommonCDMngDetail">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 공통코드중복체크, API 1231 시작 -->
+	<bean name="/ServiceAPI/system/commonCDMngIdCheck.*" class="com.neighbor.ServiceAPI.api.system.CommonCDMngIdCheck">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 공통코드등록, API 1232 시작 -->
+	<bean name="/ServiceAPI/system/commonCDMngAdd.*" class="com.neighbor.ServiceAPI.api.system.CommonCDMngAdd">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 공통코드수정, API 1233 시작 -->
+	<bean name="/ServiceAPI/system/commonCDMngUpdate.*" class="com.neighbor.ServiceAPI.api.system.CommonCDMngUpdate">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+
+	<!-- 관련사이트관리목록, API 1240 시작 -->
+	<bean name="/ServiceAPI/mngr/siteList.*" class="com.neighbor.ServiceAPI.api.mngr.SiteMngList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 관련사이트관리등록, API 1241 시작 -->
+	<bean name="/ServiceAPI/mngr/siteMngAdd.*" class="com.neighbor.ServiceAPI.api.mngr.SiteMngAdd">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 관련사이트관리삭제, API 1242 시작 -->
+	<bean name="/ServiceAPI/mngr/siteMngDelete.*" class="com.neighbor.ServiceAPI.api.mngr.SiteMngDelete">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 관련사이트관리상세, API 1243 시작 -->
+	<bean name="/ServiceAPI/mngr/siteMngDetail.*" class="com.neighbor.ServiceAPI.api.mngr.SiteMngDetail">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 관련사이트관리수정, API 1244 시작 -->
+	<bean name="/ServiceAPI/mngr/siteMngUpdate.*" class="com.neighbor.ServiceAPI.api.mngr.SiteMngUpdate">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+
+	<!-- 설문조사관리목록, API 1250 시작 -->
+	<!-- <bean name="/ServiceAPI/mngr/qestnarMngList.*" class="com.neighbor.ServiceAPI.api.mngr.QestnarMngList"> 
+		<property name="sqlSession" ref="sqlSessionTemplate" /> </bean> -->
+
+	<!-- 설문조사관리등록, API 1251 시작 -->
+	<!-- <bean name="/ServiceAPI/mngr/qestnarMngAdd.*" class="com.neighbor.ServiceAPI.api.mngr.QestnarMngAdd"> 
+		<property name="sqlSession" ref="sqlSessionTemplate" /> </bean> -->
+
+	<!-- 설문조사관리삭제, API 1252 시작 -->
+	<bean name="/ServiceAPI/mngr/qestnarMngDelete.*" class="com.neighbor.ServiceAPI.api.mngr.QestnarMngDelete">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 설문조사관리상세, API 1253 시작 -->
+	<!-- <bean name="/ServiceAPI/mngr/qestnarMngDetail.*" class="com.neighbor.ServiceAPI.api.mngr.QestnarMngDetail"> 
+		<property name="sqlSession" ref="sqlSessionTemplate" /> </bean> -->
+
+	<!-- 설문조사관리수정, API 1254 시작 -->
+	<bean name="/ServiceAPI/mngr/qestnarMngUpdate.*" class="com.neighbor.ServiceAPI.api.mngr.QestnarMngUpdate">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 설문조사관리결과, API 1255 시작 -->
+	<bean name="/ServiceAPI/mngr/qestnarMngResult.*" class="com.neighbor.ServiceAPI.api.mngr.QestnarMngResult">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 배차관련 설정 정보, API 1260 시작 -->
+	<bean name="/ServiceAPI/mngr/allocateCarInfo.*"
+		class="com.neighbor.ServiceAPI.api.stndSettingMng.AllocateCarInfo">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 배차관련 설정 정보 저장, API 1261 시작 -->
+	<bean name="/ServiceAPI/mngr/allocateCarInfoSave.*"
+		class="com.neighbor.ServiceAPI.api.stndSettingMng.AllocateCarInfoSave">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 센터이용 가능 장애등급 정보, API 1262 시작 -->
+	<bean name="/ServiceAPI/mngr/rankOfBarriersInfo.*"
+		class="com.neighbor.ServiceAPI.api.stndSettingMng.RankOfBarriersInfo">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 센터이용 가능 장애등급 정보 저장, API 1263 시작 -->
+	<bean name="/ServiceAPI/mngr/rankOfBarriersSave.*"
+		class="com.neighbor.ServiceAPI.api.stndSettingMng.RankOfBarriersSave">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 이용요금 정보, API 1264시작 -->
+	<bean name="/ServiceAPI/mngr/chargeForUsingInfo.*"
+		class="com.neighbor.ServiceAPI.api.stndSettingMng.ChargeForUsingInfo">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 이용요금 정보, API 1265시작 -->
+	<bean name="/ServiceAPI/mngr/chargeForUsingSave.*"
+		class="com.neighbor.ServiceAPI.api.stndSettingMng.ChargeForUsingSave">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 약관관리 정보, API 1266시작 -->
+	<bean name="/ServiceAPI/mngr/memberStipulationInfo.*"
+		class="com.neighbor.ServiceAPI.api.stndSettingMng.MemberStipulationInfo">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 약관관리 저장, API 1267시작 -->
+	<bean name="/ServiceAPI/mngr/memberStipulationSave.*"
+		class="com.neighbor.ServiceAPI.api.stndSettingMng.MemberStipulationSave">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 약관관리 정보, API 1268시작 -->
+	<bean name="/ServiceAPI/mngr/carInfoShareInfo.*"
+		class="com.neighbor.ServiceAPI.api.stndSettingMng.CarInfoShareInfo">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 약관관리 정보, API 1268시작 -->
+	<bean name="/ServiceAPI/mngr/carInfoShareSave.*"
+		class="com.neighbor.ServiceAPI.api.stndSettingMng.CarInfoShareSave">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 약관관리 정보, API 1269시작 -->
+	<bean name="/ServiceAPI/mngr/bookAbleInfo.*"
+		class="com.neighbor.ServiceAPI.api.stndSettingMng.BookAbleInfo">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 예약관리 정보, API 1270시작 -->
+	<bean name="/ServiceAPI/mngr/bookAbleSave.*" class="com.neighbor.ServiceAPI.api.stndSettingMng.BookAbleSave">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 센터 목록 정보, API 1280시작 -->
+	<bean name="/ServiceAPI/system/stcMngList.*" class="com.neighbor.ServiceAPI.api.system.StcMngList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+	
+	<!-- 센터 상세 정보, API 1281시작 -->
+	<bean name="/ServiceAPI/system/stcMngDetail.*" class="com.neighbor.ServiceAPI.api.system.StcMngDetail">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+	
+	<!-- 센터 정보 등록, API 1282시작 -->
+	<bean name="/ServiceAPI/system/stcMngAdd.*" class="com.neighbor.ServiceAPI.api.system.StcMngAdd">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 센터 상위 정보, API 1283시작 -->
+	<bean name="/ServiceAPI/system/getStcUpperCd.*" class="com.neighbor.ServiceAPI.api.system.StcUpperCdList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+	
+	<!-- 센터 정보 수정, API 1283시작 -->
+	<bean name="/ServiceAPI/system/stcMngModify.*" class="com.neighbor.ServiceAPI.api.system.StcMngModify">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+	
+	<!-- 센터 정보 수정, API 1284시작 -->
+	<bean name="/ServiceAPI/system/stcMngDelete.*" class="com.neighbor.ServiceAPI.api.system.StcMngDelete">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+	<!-- 긴급호출이력관리 목록, API 1285시작 -->
+	<bean name="/ServiceAPI/mngr/emgHistoryList.*" class="com.neighbor.ServiceAPI.api.mngr.EmgHistoryList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 긴급호출이력관리 목록, API 1285시작 -->
+	<bean name="/ServiceAPI/mngr/emgHistoryExcelDown.*" class="com.neighbor.ServiceAPI.api.mngr.EmgHistoryExcelDown">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+	
+	<!-- 정산관리 목록, API 1286시작 -->
+	<bean name="/ServiceAPI/mngr/statHistory.*" class="com.neighbor.ServiceAPI.api.mngr.StatHistoryList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 정산관리 엑셀 다운, API 1287시작 -->
+	<bean name="/ServiceAPI/mngr/statHistoryExcelDown.*" class="com.neighbor.ServiceAPI.api.mngr.StatHistoryExcelDown">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+	
+	<!-- 정산관리 목록, API 1287시작 -->
+	<bean name="/ServiceAPI/mngr/smsHistory.*" class="com.neighbor.ServiceAPI.api.mngr.SmsHistoryList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 정산관리 엑셀 다운, API 1288시작 -->
+	<bean name="/ServiceAPI/mngr/smsHistoryExcelDown.*" class="com.neighbor.ServiceAPI.api.mngr.SmsHistoryExcelDown">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+	
+	
+	<!-- 기본정보 관리 -->
+	<!-- 이용자정보관리 목록 조회, API 1300 시작 -->
+	<bean name="/ServiceAPI/bassInfo/hadicapMngList.*" class="com.neighbor.ServiceAPI.api.bassInfo.HadicapMngList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 차량정보관리 목록, API 1310 시작 -->
+	<bean name="/ServiceAPI/bassInfo/carMngList.*" class="com.neighbor.ServiceAPI.api.bassInfo.CarMngList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 차량정보관리 삭제, API 1311 시작 -->
+	<bean name="/ServiceAPI/bassInfo/carMngDelete.*" class="com.neighbor.ServiceAPI.api.bassInfo.CarMngDelete">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 차량정보관리 등록, API 1312 시작 -->
+	<bean name="/ServiceAPI/bassInfo/carMngAdd.*" class="com.neighbor.ServiceAPI.api.bassInfo.CarMngAdd">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 차량정보관리 상세, API 1314 시작 -->
+	<bean name="/ServiceAPI/bassInfo/carMngDetail.*" class="com.neighbor.ServiceAPI.api.bassInfo.CarMngDetail">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 차량정보관리 수정, API 1315 시작 -->
+	<bean name="/ServiceAPI/bassInfo/carMngUpdate.*" class="com.neighbor.ServiceAPI.api.bassInfo.CarMngUpdate">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+	
+	<!-- 차량정보관리 수정, API 1316 시작 -->
+	<bean name="/ServiceAPI/bassInfo/carMngExcelDown.*" class="com.neighbor.ServiceAPI.api.bassInfo.CarMngExcelDown">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+	
+	<!-- 차량번호 중복 체크 -->
+	<bean name="/ServiceAPI/bassInfo/carNumberCheck.*" class="com.neighbor.ServiceAPI.api.bassInfo.CarNumberCheck">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+	
+
+	<!-- 실시간 위치 관리, API 1400 시작 -->
+
+	<!-- 배차관리 -->
+	<!-- 차량예약현황, API 1500 시작 -->
+	<bean name="/ServiceAPI/alloc/carReceiptList.*" class="com.neighbor.ServiceAPI.api.alloc.CarReceiptList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 접수예약, API 1501 시작 -->
+	<bean name="/ServiceAPI/alloc/carReceiptAdd.*" class="com.neighbor.ServiceAPI.api.alloc.CarReceiptAdd">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 배정가능목록, API 1502 시작 -->
+	<bean name="/ServiceAPI/alloc/carAllocPopList.*" class="com.neighbor.ServiceAPI.api.alloc.CarAllocPopList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 차량예약(배정), API 1503 시작 -->
+	<bean name="/ServiceAPI/alloc/carReceiptUpdate.*" class="com.neighbor.ServiceAPI.api.alloc.CarReceiptUpdate">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+
+	<!-- 차량배차통계현황, API 1510 시작 -->
+	<bean name="/ServiceAPI/alloc/statSearch.*" class="com.neighbor.ServiceAPI.api.alloc.StatSearch">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 차량배차목록 조회, API 1511 시작 -->
+	<bean name="/ServiceAPI/alloc/carAllocList.*" class="com.neighbor.ServiceAPI.api.alloc.CarAllocList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 차량배차상세정보, API 1512 시작 -->
+	<bean name="/ServiceAPI/alloc/carAllocDetail.*" class="com.neighbor.ServiceAPI.api.alloc.CarAllocDetail">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 출발지 및 도착지 검색, API 1513 시작 -->
+	<bean name="/ServiceAPI/alloc/addrSearchList.*" class="com.neighbor.ServiceAPI.api.alloc.AddrSearchList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+
+
+	<!-- 시설물관리, API 1600 시작 -->
+
+	<!-- 컨텐츠관리, API 1700 시작 -->
+
+	<!-- 통계관리, API 1800 시작 -->
+	<!-- 운행 이용 현황 -->
+	<bean name="/ServiceAPI/stats/selectUseStatsList.*" class="com.neighbor.ServiceAPI.api.stats.GetStatsList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+	<!-- 이용자현황 -->
+	<!-- <bean name="/ServiceAPI/stats/getToDayUseStatList.*" class="com.neighbor.ServiceAPI.api.stats.GetToDayUseStatList"> 
+		<property name="sqlSession" ref="sqlSessionTemplate" /> </bean> -->
+	<!-- 일일배차 -->
+	<!-- <bean name="/ServiceAPI/stats/getToDayAllocDataList.*" class="com.neighbor.ServiceAPI.api.stats.GetToDayAllocDataList"> 
+		<property name="sqlSession" ref="sqlSessionTemplate" /> </bean> -->
+
+	<!-- 엑셀다운 -->
+	<bean name="/ServiceAPI/stats/statsExcelDown.download" class="com.neighbor.ServiceAPI.api.stats.StatsExcelDown">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+
+
+
+
+	<!-- 대민쪽 -->
+	<!-- 민원광장, API 2000 시작 -->
+
+	<!-- 이용안내, API 2100 시작 -->
+
+	<!-- 차량이용 예약 -->
+	<!-- 접수현황, API 2200 시작 -->
+	<bean name="/ServiceAPI/carUseResve/recptSttusList.*"
+		class="com.neighbor.ServiceAPI.api.carUseResve.RecptSttusList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 접수예약 등록, API 2201 시작 -->
+	<bean name="/ServiceAPI/carUseResve/recptSttusAdd.*" class="com.neighbor.ServiceAPI.api.carUseResve.RecptSttusAdd">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 접수예약 가능 시간 조회, API 2209 시작 -->
+	<bean name="/ServiceAPI/carUseResve/resveAbleTimeList.*" class="com.neighbor.ServiceAPI.api.carUseResve.ResveAbleTimeList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 접수예약 취소, API 2202 시작 -->
+	<bean name="/ServiceAPI/carUseResve/recptSttusDelete.*"
+		class="com.neighbor.ServiceAPI.api.carUseResve.RecptSttusDelete">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+	
+	<!-- 최근 출발지/목적지 정보, API 2203 시작 -->
+	<bean name="/ServiceAPI/carUseResve/getPopUpInfo.*"
+		class="com.neighbor.ServiceAPI.api.carUseResve.PopUpInfo">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 최근 출발지/목적지 센터확인, API 2204 시작 -->
+	<bean name="/ServiceAPI/carUseResve/findStartEndCnter.*"
+		class="com.neighbor.ServiceAPI.api.carUseResve.FindStartEndCnter">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+	
+	<!-- 취소예약 내역삭제, API 2205 시작 -->
+	<bean name="/ServiceAPI/carUseResve/recptSttusAllDelete.*"
+		class="com.neighbor.ServiceAPI.api.carUseResve.RecptSttusAllDelete">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 정보광장(커뮤니티) -->
+	<!-- 공지사항목록조회, API 2300 시작 -->
+	<bean name="/ServiceAPI/notice/noticeList.*"
+		class="com.neighbor.ServiceAPI.api.userSiteTemplate.NoticeList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 공지사항등록, API 2301 시작 -->
+	<bean name="/ServiceAPI/notice/noticeAdd.*"
+		class="com.neighbor.ServiceAPI.api.userSiteTemplate.NoticeAdd">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 공지사항상세, API 2302 시작 -->
+	<bean name="/ServiceAPI/notice/noticeDetail.*"
+		class="com.neighbor.ServiceAPI.api.userSiteTemplate.NoticeDetail">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 공지사항수정, API 2303 시작 -->
+	<bean name="/ServiceAPI/notice/noticeUpdate.*"
+		class="com.neighbor.ServiceAPI.api.userSiteTemplate.NoticeUpdate">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 공지사항삭제, API 2304 시작 -->
+	<bean name="/ServiceAPI/notice/noticeDelete.*"
+		class="com.neighbor.ServiceAPI.api.userSiteTemplate.NoticeDelete">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- QA답글작성, API 2305 시작 -->
+	<bean name="/ServiceAPI/notice/replyList.*"
+		class="com.neighbor.ServiceAPI.api.userSiteTemplate.ReplyList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- QA답글등록, API 2306 시작 -->
+	<bean name="/ServiceAPI/notice/replyAdd.*" class="com.neighbor.ServiceAPI.api.userSiteTemplate.ReplyAdd">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 차량관제 API 2500 -->
+	<bean name="/ServiceAPI/cntrl/searchWordList.*" class="com.neighbor.ServiceAPI.api.cntrl.SearchWordList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+	
+	<!-- 센터목록 조회, API 1401시작 -->
+	<bean name="/ServiceAPI/common/CenterList.*" class="com.neighbor.ServiceAPI.api.common.CenterList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+	
+	<bean name="/ServiceAPI/main/CarUseList.*" class="com.neighbor.ServiceAPI.api.main.CarUseList">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 이지페이 결제 배치키 정보 조회, Yudy -->
+	<bean name="/ServiceAPI/bassInfo/searchEasypayBatchKey.*" class="com.neighbor.ServiceAPI.api.bassInfo.SearchEasypayBatchkey">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 이지페이 결제 배치키 정보 삭제, Yudy -->
+	<bean name="/ServiceAPI/bassInfo/easypayBatchkeyDelete.*" class="com.neighbor.ServiceAPI.api.bassInfo.EasypayBatchkeyDelete">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+	<!-- 이지페이 결제 배치키 정보 등록, Yudy -->
+	<bean name="/ServiceAPI/bassInfo/easypayBatchkeyUpdate.*" class="com.neighbor.ServiceAPI.api.bassInfo.EasypayBatchkeyUpdate">
+		<property name="sqlSession" ref="sqlSessionTemplate" />
+	</bean>
+
+</beans>

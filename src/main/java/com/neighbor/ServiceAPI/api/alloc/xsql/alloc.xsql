@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="alloc">
+
+	<!-- 차량예약현황  -->
+	<select id="selectCarAllocList" parameterType="hashmap" resultType="hashmap">
+		SELECT C.* FROM 
+			(
+			SELECT @rownum := @rownum + 1 AS rnum, B.* FROM
+				(
+				    SELECT 
+						A.MBER_ID AS MBER_ID
+						, B.MBER_NM AS MBER_NM
+						, IFNULL(DATE_FORMAT(A.RESVE_DT, '%Y-%m-%d %T'),'') AS RESVE_DT
+						, IFNULL(DATE_FORMAT(A.CARALC_DT, '%Y-%m-%d %T'),'') AS CARALC_DT
+						, C.WHEELCHAIR_SE_CD
+						, IF(C.WHEELCHAIR_SE_CD = '00','N','Y') AS WHEELCHAIR_DESC
+						, C.ASSTN_PERSON_ENNC
+						, IF(C.ASSTN_PERSON_ENNC = 'Y','Y','N') AS SUPPORTER_DESC
+						, A.CARALC_STTUS_CD AS ALLOC_STAT_CD
+						, (
+							SELECT CD_VALUE_DE
+							FROM CMMN_CD_VALUE_INFO 
+							WHERE CD_ID = 'ALLOC_STAT_CD' 
+							AND CD_VALUE = A.CARALC_STTUS_CD) ASCARALC_STTUS_DESC
+					FROM CARALC_HIST A
+						LEFT OUTER JOIN MBER_INFO B ON A.MBER_ID = B.MBER_ID
+						LEFT OUTER JOIN HANDICAP_INFO C ON A.MBER_ID = C.MBER_ID,
+						( SELECT @rownum := 0 ) R	
+					WHERE 1 = 1
+					<if test="ALLOC_STAT_CD != null">
+						AND A.CARALC_STTUS_CD = #{ALLOC_STAT_CD}	
+					</if>
+					<if test="NAME != null">
+						AND B.MBER_NM LIKE CONCAT('%',#{NAME},'%')
+					</if>
+					<if test="USER_ID != null">
+						AND B.MBER_ID LIKE CONCAT('%',#{USER_ID},'%')
+					</if>
+					<if test="ST_DT != null">
+						AND A.RESVE_DT BETWEEN CONCAT(#{ST_DT},' 00:00:00') AND CONCAT(#{EN_DT},' 23:59:59')
+					</if>
+					ORDER BY A.RESVE_DT DESC
+				) B
+			) C
+		<if test="page != null">
+			WHERE C.rnum BETWEEN (1 +(#{page}-1) * 10) AND (#{page}*10)	
+		</if>	
+	</select>
+	
+	<select id="selectCarAllocListCount" parameterType="hashmap" resultType="hashmap">
+		SELECT COUNT(*) AS CNT
+		FROM CARALC_HIST A
+			LEFT OUTER JOIN MBER_INFO B ON A.MBER_ID = B.MBER_ID
+			LEFT OUTER JOIN HANDICAP_INFO C ON A.MBER_ID = C.MBER_ID
+		WHERE 1 = 1
+		<if test="ALLOC_STAT_CD != null">
+			AND A.CARALC_STTUS_CD = #{ALLOC_STAT_CD}	
+		</if>
+		<if test="NAME != null">
+			AND B.MBER_NM LIKE CONCAT('%',#{NAME},'%')
+		</if>
+		<if test="USER_ID != null">
+			AND B.MBER_ID LIKE CONCAT('%',#{USER_ID},'%')
+		</if>
+		<if test="ST_DT != null">
+			AND A.RESVE_DT BETWEEN CONCAT(#{ST_DT},' 00:00:00') AND CONCAT(#{EN_DT},' 23:59:59')
+		</if>
+	</select>
+	
+	<!-- 접수예약 등록 -->
+	<insert id="carReceiptInsert" parameterType="hashmap">
+		INSERT INTO CARALC_HIST 
+			(
+				  
+				PASSENSERS,PURPOSE_CD, DEPT_X, DEPT_Y, DEST_X, DEST_Y,DEPT_DESC, DEST_DESC,
+				RESVE_DT, CARALC_STTUS_CD, 
+				<if test="REMARK != null">
+		  			REMARK, 
+        		</if>
+        		 <if test="EXP_TRAVEL_HOURS != null">
+		  			EXP_TRAVEL_HOURS, 
+        		</if> 
+        		<if test="MVMN_DSTNC != null">
+		  			MVMN_DSTNC, 
+        		</if>
+        		<if test="CYCHG != null">
+		  			CYCHG, 
+        		</if> 
+        		MBER_ID
+		 	)
+		VALUES 
+			(
+				#{RECEIPT_DATETIME}, #{PASSENSERS}, 
+				#{PURPOSE_CD}, '10', #{DEPT_X}, #{DEPT_Y}, #{DEST_X}, #{DEST_Y}, #{DEPT_DESC}, #{DEST_DESC},
+				<if test="REMARK != null">
+		  			#{REMARK}, 
+        		</if>
+        		<if test="EXP_TRAVEL_HOURS != null">
+		  			#{EXP_TRAVEL_HOURS}, 
+        		</if>
+        		<if test="EXP_TRAVEL_DISTANCE != null">
+		  			#{EXP_TRAVEL_DISTANCE}, 
+        		</if>
+        		<if test="EXP_SERICE_FEE != null">
+		  			#{EXP_SERICE_FEE}, 
+        		</if>
+        		#{USER_ID}
+			)
+	</insert>
+	
+	<!-- 배정가능목록  -->
+	<select id="selectCarAllocPopList" parameterType="hashmap" resultType="hashmap">
+		SELECT * FROM
+			(
+			SELECT @rownum := @rownum + 1 AS rnum, A.*
+			FROM	
+				(
+				SELECT 
+					A.MODL_NM AS MODEL, A.VHCLE_NO AS CAR_NO, A.YRIDNW AS PROD_YEAR, A.MXMM_BRDNG_NMPR AS MAX_PASSENGERS, 
+					IF(A.VHCLE_TY_CD = '10','Y','N') AS WHEELCHAIR_YN,
+					(SELECT CD_VALUE_DE 
+					 FROM CMMN_CD_VALUE_INFO 
+					 WHERE CD_ID = 'VHCLE_TY_CD' 
+					 	AND CD_VALUE = A.VHCLE_TY_CD) AS CAR_TYPE_DESC,
+					(SELECT CD_VALUE_DE 
+					 FROM CMMN_CD_VALUE_INFO 
+					 WHERE CD_ID = 'CAR_STAT_CD' 
+					 	AND CD_VAL = A.CAR_STAT_CD)
+					 	'' AS CAR_STAT_DESC,
+					B.COLCT_DT AS LOC_DATETIME,
+					ROUND(6371 * 2 * ATAN2(SQRT(POW(SIN(RADIANS(B.LC_CRDNT_X - #{DEPT_X})/2), 2) 
+						+ POW(SIN(RADIANS(B.LC_CRDNT_Y - #{DEPT_Y})/2), 2) * COS(RADIANS(#{DEPT_X})) * COS(RADIANS(B.LC_CRDNT_X))), SQRT(1 - POW(SIN(RADIANS(B.LC_CRDNT_X - #{DEPT_X})/2), 2) 
+						+ POW(SIN(RADIANS(B.LC_CRDNT_Y - #{DEPT_Y})/2), 2) * COS(RADIANS(#{DEPT_X})) * COS(RADIANS(B.LC_CRDNT_X)))),1) AS DISTANCE,
+					C.MBER_NM AS NAME
+				FROM VHCLE_INFO A, DRVER_LC_HIST B, MBER_INFO C, ( SELECT @rownum := 0 ) R	
+				WHERE A.VHCLE_NO = B.CAR_NO
+					AND A.USER_ID = C.USER_ID
+					AND A.MAX_PASSENGERS > #{PASSENSERS}
+					AND SUBSTRING(OPERABLE_WEEKDAYS,DAYOFWEEK(#{RECEIPT_DATETIME}),1) = 1
+					AND SUBSTRING(OPERABLE_HOURS,DATE_FORMAT(#{RECEIPT_DATETIME}, '%H')+1,1) = 1
+					AND A.CAR_NO NOT IN 
+						(
+						SELECT CAR_NO 
+						FROM CAR_ALLOC_HIST 
+						WHERE RECEIPT_DATETIME BETWEEN #{RECEIPT_DATETIME} AND CONCAT(DATE_FORMAT(#{RECEIPT_DATETIME},'%Y-%m-%d') ,' 23:59:59') 
+							AND ALLOC_STAT_CD = '20'
+						)
+				) A
+			ORDER BY A.DISTANCE DESC
+			) B	
+	</select>
+	
+	<!-- 차량예약 -->
+	<insert id="carAllocUpdate" parameterType="hashmap">
+		UPDATE CARALC_HIST SET
+			DRIVER_ID = 'test30',
+			VHCLE_NO = #{VHCLE_NO},
+			<if test="CYCHG != null">
+	  			CYCHG = #{CYCHG}, 
+    		</if>
+    		<if test="MVMN_DSTNC != null">
+	  			MVMN_DSTNC = #{MVMN_DSTNC}, 
+    		</if>
+			CARALC_DT = now(),
+			CARALC_STTUS_CD = '20'
+		WHERE MBER_ID = #{MBER_ID}
+			AND RESVE_DT = #{RESVE_DT}
+	</insert>
+	
+	<!-- 예약취소 (배차이력추가)-->
+	<insert id="CaralcCancelInsert" parameterType="hashmap">
+		insert into CARALC_HIST	(
+			RESVE_NO
+			,	MBER_ID
+			,	CNTER_CD
+			,	RESVE_DT
+			,	CHRG_CNTER_CD
+			,	GRP_ID
+			,	CARALC_STTUS_CD
+			,	REGISTER_ID
+			,	REGIST_DT
+			)	
+		select 		
+			RESVE_NO
+			,	MBER_ID
+			,	CNTER_CD
+			,	RESVE_DT
+			,	CHRG_CNTER_CD
+			,	GRP_ID
+			,	#{CARALC_STTUS_CD}
+			,	MBER_ID
+			,	now()
+		from CARALC_HIST
+		where RESVE_NO
+		and SN = (select max(SN) from CARALC_HIST where RESVE_NO = #{RESVE_NO})
+	</insert>
+	
+	<!-- 예약취소 (접수이력업데이트) -->
+	<update id="RceptCaralcSttusUpdate" parameterType="hashmap">
+	update RCEPT_HIST A, CARALC_HIST B
+	set	A.CARALC_STTUS_CD = B.CARALC_STTUS_CD
+	where A.RESVE_NO = B.RESVE_NO
+	and A.RESVE_NO = #{RESVE_NO}
+	and B.SN in (select max(SN) from CARALC_HIST where RESVE_NO = #{RESVE_NO})
+	</update>
+
+	<!-- 접수예약취소 -->
+	<update id="carRecptSttusDelete" parameterType="hashmap">
+		UPDATE CARALC_HIST SET
+			CARALC_STTUS_CD = '20'
+		WHERE RESVE_DT IN
+		<foreach item="item" collection="array" open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</update>
+	
+	<!-- 담당센터코드 가져오기 -->
+	<select id="getChrgCnterCd" parameterType="hashmap" resultType="hashmap">
+		SELECT	CHRG_CNTER_CD
+		FROM	CARALC_HIST
+		WHERE	RESVE_DT = #{resve_dt}
+		AND		MBER_ID = #{mber_id}
+		AND		CNTER_CD = #{cnter_cd}
+		AND		SN IN (SELECT MAX(SN) FROM CARALC_HIST GROUP BY MBER_ID, CNTER_CD, RESVE_DT)
+	</select>
+	
+	<!-- 취소예약 내역 삭제/배차이력 -->
+	<delete id="deleteCaralcHist">
+	DELETE FROM CARALC_HIST
+	WHERE	RESVE_DT = #{resve_dt}
+	AND		MBER_ID = #{mber_id}
+	AND		CNTER_CD = #{cnter_cd}
+	</delete>
+	
+	<!-- 취소예약 내역 /배차이력 개수 조회 -->
+	<select id="selectCaralcHistCount" resultType="hashmap">
+	SELECT 		COUNT(*) AS CNT 
+	FROM 		CARALC_HIST
+	WHERE	RESVE_DT = #{resve_dt}
+	AND		MBER_ID = #{mber_id}
+	AND		CNTER_CD = #{cnter_cd}
+	</select>
+	
+	<!-- 취소예약 내역 삭제/배차이력 -->
+	<delete id="deleteRceptHist">
+	DELETE FROM RCEPT_HIST
+	WHERE	RESVE_DT = #{resve_dt}
+	AND		MBER_ID = #{mber_id}
+	AND		CNTER_CD = #{cnter_cd}
+	</delete>
+	
+	<!-- 예약취소이력추가 -->
+	<insert id="insertRceptCancelHist">
+	INSERT INTO RCEPT_CANCEL_HIST
+	VALUES (#{resve_dt},#{mber_id},#{cnter_cd},#{chrg_cnter_cd},#{sn},#{register_id},now(),'N')
+	</insert>
+	
+	<!-- 예약취소이력 시퀀스조회 -->
+	<select id="selectRceptCancelHistSN" resultType="Integer">
+	SELECT SN FROM RCEPT_CANCEL_HIST
+	WHERE RESVE_DT = #{resve_dt}
+	AND MBER_ID = #{mber_id}
+	AND CNTER_CD = #{cnter_cd}
+	ORDER BY SN DESC LIMIT 1
+	</select>
+	
+	<!-- 배차목록현황조회  -->
+	<select id="selectStatSearch" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+			'ALL' AS GUBN, CARALC_STTUS_CD, COUNT(*) AS CNT
+		FROM CARALC_HIST	
+		WHERE RESVE_DT BETWEEN CONCAT(DATE_FORMAT(now(),'%Y-%m') ,'-01 00:00:00') AND CONCAT(LAST_DAY(DATE_FORMAT(now(),'%Y-%m-%d')) ,' 23:59:59')
+		GROUP BY CARALC_STTUS_CD	
+		UNION ALL
+		SELECT 
+			'TODAY' AS GUBN, CARALC_STTUS_CD, COUNT(*) AS CNT
+		FROM CARALC_HIST		
+		WHERE RESVE_DT BETWEEN CONCAT(DATE_FORMAT(now(),'%Y-%m-%d') ,' 00:00:00') AND CONCAT(DATE_FORMAT(now(),'%Y-%m-%d') ,' 23:59:59')
+		GROUP BY CARALC_STTUS_CD
+	</select>
+	
+	
+	<!-- 차량배차현황  -->
+	<select id="selectCarAllocResultList" parameterType="hashmap" resultType="hashmap">
+		SELECT C.* FROM 
+			(
+			SELECT @rownum := @rownum + 1 AS rnum, B.* FROM
+				(
+				SELECT 
+					A.MBER_ID AS USER_ID, IFNULL(B.REGISTER_ID,'') AS DRIVER_ID, C.MBER_NM ASNAME,
+					IFNULL(DATE_FORMAT(A.TKCAR_DT, '%Y-%m-%d %T'),'') AS GETIN_DATETIME,
+					IFNULL(DATE_FORMAT(A.GFF_DT, '%Y-%m-%d %T'),'') AS GETOFF_DATETIME,
+					IFNULL(DATE_FORMAT(A.RESVE_DT, '%Y-%m-%d %T'),'') AS RECEIPT_DATETIME,
+					IFNULL(DATE_FORMAT(A.CARALC_DT, '%Y-%m-%d %T'),'') AS ALLOC_DATETIME,
+					IFNULL(A.DEPT_DESC,'') as DEPT_DESC, IFNULL(A.DEST_DESC,'')as DEST_DESC,
+					A.DEPT_X, A.DEPT_Y, A.DEST_X, A.DEST_Y, A.PASSENSERS, 
+					A.CARALC_STTUS_CD AS ALLOC_STAT_CD,
+					IFNULL(B.VHCLE_NO,'') AS CAR_NO, 
+					A.MVMN_DSTNC AS TRAVEL_DISTANCE, A.CYCHG AS SERVICE_FEE, 
+					IF(A.GFF_DT = null,null,A.GFF_DT-A.TKCAR_DT) AS TRAVEL_HOURS,
+					(SELECT CD_VALUE_DE 
+					 FROM CMMN_CD_VALUE_INFO 
+					 WHERE CD_ID = 'PURPOSE_CD' 
+					 	AND CD_VALUE = A.PURPOSE_CD) AS PURPOSE_DESC,
+					(SELECT CD_VALUE_DE 
+					 FROM CMMN_CD_VALUE_INFO 
+					 WHERE CD_ID = 'ALLOC_STAT_CD' 
+					 	AND CD_VALUE = A.CARALC_STTUS_CD) AS ALLOC_STAT_DESC
+				FROM CARALC_HIST A
+					LEFT OUTER JOIN VHCLE_INFO B ON A.VHCLE_NO = B.VHCLE_NO
+					LEFT OUTER JOIN MBER_INFO C ON A.MBER_ID = C.MBER_ID,
+					( SELECT @rownum := 0 ) R	
+				WHERE 1 = 1
+				<if test="ALLOC_STAT_CD != null">
+					AND A.CARALC_STTUS_CD = #{ALLOC_STAT_CD}	
+				</if>
+				<if test="NAME != null">
+					AND C.MBER_NM LIKE CONCAT('%',#{NAME},'%')
+				</if>
+				<if test="ST_DT != null">
+					AND A.RESVE_DT BETWEEN CONCAT(#{ST_DT},' 00:00:00') AND CONCAT(#{EN_DT},' 23:59:59')
+				</if>
+				ORDER BY A.RESVE_DT DESC
+				) B
+			) C
+		<if test="page != null">
+			WHERE C.rnum BETWEEN (1 +(#{page}-1) * 10) AND (#{page}*10)	
+		</if>	
+	</select>
+	
+	<select id="selectCarAllocListResultCount" parameterType="hashmap" resultType="hashmap">
+		SELECT COUNT(*) AS CNT
+		FROM CARALC_HIST A
+			LEFT OUTER JOIN VHCLE_INFO B ON A.VHCLE_NO = B.VHCLE_NO
+			LEFT OUTER JOIN MBER_INFO C ON A.MBER_ID = C.MBER_ID
+		WHERE 1 = 1
+		<if test="CARALC_STTUS_CD != null">
+			AND A.CARALC_STTUS_CD = #{CARALC_STTUS_CD}	
+		</if>
+		<if test="MBER_NM != null">
+			AND C.MBER_NM LIKE CONCAT('%',#{MBER_NM},'%')
+		</if>
+		<if test="ST_DT != null">
+			AND A.RESVE_DT BETWEEN CONCAT(#{ST_DT},' 00:00:00') AND CONCAT(#{EN_DT},' 23:59:59')
+		</if>
+	</select>
+	
+	<!-- PURPOSE_CD, B.USERID에 해당 컬럼이 없음 -->
+	<select id="selectCarAllocDetail" parameterType="hashmap" resultType="hashmap">
+		SELECT
+			(SELECT CD_VALUE_DE 
+			 FROM CMMN_CD_VALUE_INFO 
+			 WHERE CD_ID = 'ALLOC_STAT_CD' 
+			 	AND CD_VALUE = A.ALLOC_STAT_CD) AS ALLOC_STAT_DESC,
+			A.MBER_ID AS USER_ID, C.NAME,
+			 A.DEPT_X, A.DEPT_Y, A.DEST_X, A.DEST_Y
+			 IFNULL(A.DEPT_DESC,'')as DEPT_DESC,IFNULL(A.DEST_DESC,'')as DEST_DESC, 
+			IFNULL(DATE_FORMAT(A.RESVE_DT, '%Y-%m-%d %T'),'') AS RECEIPT_DATETIME,
+			 (SELECT CD_VALUE_DE 
+			 FROM CMMN_CD_VALUE_INFO 
+			 WHERE CD_ID = 'PURPOSE_CD' 
+			 	AND CD_VALUE = A.PURPOSE_CD) AS PURPOSE_DESC,
+			A.VHCLE_NO AS CAR_NO,
+		 A.PASSENSERS,	
+			IFNULL(DATE_FORMAT(A.TKCAR_DT, '%Y-%m-%d %T'),'') AS GETIN_DATETIME,
+			IFNULL(DATE_FORMAT(A.GFF_DT, '%Y-%m-%d %T'),'') AS GETOFF_DATETIME,
+			B.USER_ID AS DRIVER_ID,
+			(SELECT MBER_NM FROM MBER_INFO WHERE MBER_ID = B.USER_ID) AS DRIVER_NAME,
+			A.EXP_TRAVEL_HOURS, A.EXP_SERICE_FEE,
+			A.MVMN_DSTNC AS EXP_TRAVEL_DISTANCE,
+			A.TRAVEL_DISTANCE,
+			A.CYCHG AS SERVICE_FEE,
+			IF(A.GFF_DT = null,null,A.GFF_DT-A.TKCAR_DT) AS TRAVEL_HOURS,
+			A.REMARK
+		FROM CARALC_HIST A
+			LEFT OUTER JOIN VHCLE_INFO B ON A.VHCLE_NO = B.VHCLE_NO
+			LEFT OUTER JOIN MBER_INFO C ON A.MBER_ID = C.MBER_ID
+		WHERE A.MBER_ID = #{USER_ID}
+			AND A.RESVE_DT = #{RECEIPT_DATETIME}
+	</select>
+	
+	<insert id="addCarAlocHist" parameterType="hashmap" >
+		INSERT INTO CARALC_HIST
+			(
+			`RESVE_NO`,
+			`MBER_ID`,
+			`CNTER_CD`,
+			`RESVE_DT`,
+			`CHRG_CNTER_CD`,
+			`GRP_ID`,
+			`CARALC_STTUS_CD`,
+			`REGISTER_ID`,
+			`REGIST_DT`
+			)
+		select
+			A.RESVE_NO,
+			#{MBER_ID},
+			#{CNTER_CD},
+			#{RESVE_DT},
+			#{CHRG_CNTER_CD},
+			#{GRP_ID},
+			#{CARALC_STTUS_CD},
+			#{MBER_ID},
+			sysdate()
+		FROM RCEPT_HIST A LEFT JOIN CARALC_HIST B
+        ON A.RESVE_NO = B.RESVE_NO
+        WHERE A.MBER_ID = #{MBER_ID}
+        AND A.CNTER_CD = #{CNTER_CD}
+        AND A.RESVE_DT = #{RESVE_DT}
+        AND A.RCEPT_SE_CD = #{RCEPT_SE_CD}
+        AND B.RESVE_NO IS NULL
+        LIMIT 1
+	</insert>
+	
+</mapper>

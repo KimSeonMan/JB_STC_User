@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="carMng">
+	
+	<!-- 차량정보관리목록조회 -->
+	<select id="selectCarMngList" parameterType="hashmap" resultType="hashmap">
+		SELECT C.* FROM 
+			(
+			SELECT @rownum := @rownum + 1 AS rnum, Z.* FROM                
+				(               
+				SELECT 
+					D.CNTER_NM AS CNTER_NM
+				    , D.CNTER_CD
+				    , A.VHCLE_NO AS VHCLE_NO
+				    , (SELECT CD_VALUE_DE AS CD_VAL_DESC 
+				       FROM CMMN_CD_VALUE_INFO 
+				       WHERE CD_ID = 'VHCLE_TY_CD' 
+				        AND CD_VALUE = A.VHCLE_TY_CD) AS VHCLE_TYPE_DESC
+				    , ifnull(A.MODL_NM, '') AS MODL_NM
+				    , ifnull(A.MXMM_BRDNG_NMPR,'') AS MXMM_BRDNG_NMPR
+				    , ifnull(A.YRIDNW, '') AS YRIDNW
+				    , CASE 
+				    	WHEN A.RESVE_VHCLE_AT = 'Y' THEN '예'
+				        WHEN A.RESVE_VHCLE_AT = 'N' THEN '아니오' 
+				    	ELSE '-'
+				      END AS RESVE_VHCLE_AT
+				    , CASE 
+				    	WHEN A.COPERTN_CARALC_AT = 'Y' THEN '예'
+				        WHEN A.COPERTN_CARALC_AT = 'N' THEN '아니오' 
+				    	ELSE '-'
+				      END AS COPERTN_CARALC_AT
+					, ifnull(C.MBER_NM, '') as MBER_NM
+				    , CASE 
+				    	WHEN A.USE_AT = 'Y' THEN '예'
+				        WHEN A.USE_AT = 'N' THEN '아니오' 
+				    	ELSE '-'
+				      END AS USE_AT
+				FROM VHCLE_INFO A 
+				LEFT JOIN DRVER_INFO B ON A.VHCLE_NO = B.VHCLE_NO AND A.CNTER_CD = B.CNTER_CD
+				LEFT JOIN MBER_INFO C ON B.MBER_ID = C.MBER_ID AND C.MBER_SE_CD = 30 AND A.CNTER_CD = B.CNTER_CD
+				LEFT JOIN CNTER_INFO D ON A.CNTER_CD = D.CNTER_CD ,
+				( SELECT @rownum := 0 ) R
+				WHERE 1=1
+				<if test='cnterState == "WDR"'>
+					AND D.UPPER_CNTER_CD = #{CNTER_CD}
+				</if>
+				<if test='cnterState == "ARE"'>
+					AND D.CNTER_CD = #{CNTER_CD}
+				</if>
+				<if test="searchCNTER_CD != NULL">
+					AND D.CNTER_CD LIKE CONCAT('%', #{searchCNTER_CD},'%')
+				</if>
+				<if test="searchVHCLE_NO != NULL">
+					AND A.VHCLE_NO LIKE CONCAT('%',#{searchVHCLE_NO},'%')
+				</if>
+				<if test="searchRESVE_VHCLE_AT != NULL">
+					AND A.RESVE_VHCLE_AT = #{searchRESVE_VHCLE_AT}
+				</if>
+				<if test="searchCOPERTN_CARALC_AT != NULL">
+					AND A.COPERTN_CARALC_AT = #{searchCOPERTN_CARALC_AT}
+				</if>
+				<if test="searchVHCLE_TY_CD != NULL">
+					AND A.VHCLE_TY_CD = #{searchVHCLE_TY_CD}
+				</if>
+				ORDER BY A.REGIST_DT
+				) Z
+			) C
+		<if test="page != null">
+			WHERE C.rnum BETWEEN (1 +(#{page}-1) * 10) AND (#{page}*10)	
+		</if>
+	</select>
+	
+	<!-- 차량정보관리목록 COUNT -->
+	<select id="selectCarMngListCount" parameterType="hashmap" resultType="hashmap">
+		SELECT COUNT(*) AS CNT
+		FROM VHCLE_INFO A 
+		LEFT JOIN DRVER_INFO B ON A.VHCLE_NO = B.VHCLE_NO AND A.CNTER_CD = B.CNTER_CD
+		LEFT JOIN MBER_INFO C ON B.MBER_ID = C.MBER_ID AND C.MBER_SE_CD = 30 AND A.CNTER_CD = B.CNTER_CD
+		LEFT JOIN CNTER_INFO D ON A.CNTER_CD = D.CNTER_CD 
+		WHERE 1=1
+		<if test='cnterState == "WDR"'>
+			AND D.UPPER_CNTER_CD = #{CNTER_CD}
+		</if>
+		<if test='cnterState == "ARE"'>
+			AND D.CNTER_CD = #{CNTER_CD}
+		</if>
+		<if test="searchCNTER_CD != NULL">
+			AND D.CNTER_CD = #{searchCNTER_CD}
+		</if>
+		<if test="searchVHCLE_NO != NULL">
+			AND A.VHCLE_NO LIKE CONCAT('%',#{searchVHCLE_NO},'%')
+		</if>
+		<if test="searchRESVE_VHCLE_AT != NULL">
+			AND A.RESVE_VHCLE_AT = #{searchRESVE_VHCLE_AT}
+		</if>
+		<if test="searchCOPERTN_CARALC_AT != NULL">
+			AND A.COPERTN_CARALC_AT = #{searchCOPERTN_CARALC_AT}
+		</if>
+		<if test="searchVHCLE_TY_CD != NULL">
+			AND A.VHCLE_TY_CD = #{searchVHCLE_TY_CD}
+		</if>
+	</select>
+	
+	<delete id="carMngDelete" parameterType="hashmap">
+		UPDATE VHCLE_INFO SET 
+			USE_AT = 'N'
+		WHERE VHCLE_NO = #{VHCLE_NO}
+		AND CNTER_CD = #{CNTER_CD}
+	</delete>
+	
+	<insert id="carMngInsert" parameterType="hashmap">
+		INSERT INTO VHCLE_INFO 
+			(
+		  			CNTER_CD, 
+		  			VHCLE_NO, 
+        		<if test="RESVE_VHCLE_AT != null">
+		  			RESVE_VHCLE_AT, 
+        		</if>
+        		<if test="COPERTN_CARALC_AT != null">
+		  			COPERTN_CARALC_AT, 
+        		</if>
+        		<if test="VHCLE_TY_CD != null">
+		  			VHCLE_TY_CD, 
+        		</if>
+        		<if test="MODL_NM != null">
+		  			MODL_NM, 
+        		</if>
+        		<if test="MAKR != null">
+		  			MAKR, 
+        		</if>
+        		<if test="MXMM_BRDNG_NMPR != null">
+		  			MXMM_BRDNG_NMPR, 
+        		</if>
+        		<if test="OPERABLE_HOURS != null">
+		  			OPERABLE_HOURS,
+        		</if>
+        		<if test="YRIDNW != null">
+		  			YRIDNW,
+        		</if>
+        		<if test="VIN != null">
+		  			VIN,
+        		</if>
+        		<if test="USE_AT != null">
+		  			USE_AT,
+        		</if>
+        		<if test="RM != null">
+		  			RM,
+        		</if>
+				REGISTER_ID, REGIST_DT
+		 	)
+		VALUES 
+			(
+					#{CNTER_CD}, 
+		  			#{VHCLE_NO}, 
+				<if test="RESVE_VHCLE_AT != null">
+		  			#{RESVE_VHCLE_AT}, 
+        		</if>
+        		<if test="COPERTN_CARALC_AT != null">
+		  			#{COPERTN_CARALC_AT}, 
+        		</if>
+        		<if test="VHCLE_TY_CD != null">
+		  			#{VHCLE_TY_CD}, 
+        		</if>
+        		<if test="MODL_NM != null">
+		  			#{MODL_NM}, 
+        		</if>
+        		<if test="MAKR != null">
+		  			#{MAKR}, 
+        		</if>
+        		<if test="MXMM_BRDNG_NMPR != null">
+		  			#{MXMM_BRDNG_NMPR}, 
+        		</if>
+        		<if test="OPERABLE_HOURS != null">
+		  			#{OPERABLE_HOURS},
+        		</if>
+        		<if test="YRIDNW != null">
+		  			#{YRIDNW},
+        		</if>
+        		<if test="VIN != null">
+		  			#{VIN},
+        		</if>
+        		<if test="USE_AT != null">
+		  			#{USE_AT},
+        		</if>
+        		<if test="RM != null">
+		  			#{RM},
+        		</if>
+				 #{REGISTER_ID}, now()
+			)
+	</insert>
+	
+	<select id="carMngDetail" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+			A.*
+		FROM VHCLE_INFO A 
+		WHERE VHCLE_NO = #{VHCLE_NO}
+		AND CNTER_CD = #{CNTER_CD}
+	</select>
+	
+	<update id="carMngUpdate" parameterType="hashmap">
+		UPDATE VHCLE_INFO SET 
+	  			RESVE_VHCLE_AT = #{RESVE_VHCLE_AT}, 
+	  			COPERTN_CARALC_AT = #{COPERTN_CARALC_AT}, 
+	  			VHCLE_TY_CD = #{VHCLE_TY_CD},
+	  			MODL_NM = #{MODL_NM},
+	  			MAKR = #{MAKR},
+	  			MXMM_BRDNG_NMPR = #{MXMM_BRDNG_NMPR},
+	  			YRIDNW = #{YRIDNW}, 
+	  			VIN = #{VIN},
+	  			RM = #{RM},
+			REGISTER_ID = #{REGISTER_ID}
+		WHERE VHCLE_NO = #{VHCLE_NO}
+		AND CNTER_CD = #{CNTER_CD}	
+	</update>
+	
+	<select id="selectSearchVhcleTypeList" resultType="hashmap">
+		select 
+			CD_ID
+		    , CD_VALUE
+		    , CD_VALUE_DE 
+		from CMMN_CD_VALUE_INFO 
+		where cd_id = 'VHCLE_TY_CD'
+	</select>
+	
+	<select id="carNumberCheck" parameterType="hashmap" resultType="hashmap">
+		SELECT COUNT(*) AS CAR_NO
+		  FROM DRVER_INFO
+		WHERE VHCLE_NO = #{VHCLE_NO}
+	</select>
+	
+	<select id="selectCarNumberWithWatchTable" parameterType="hashmap" resultType="hashmap">
+		SELECT COUNT(*) AS CAR_NO
+		  FROM ${WATCH_TABLE}
+		WHERE VHCLE_NO = #{VHCLE_NO}
+	</select>
+	
+	
+</mapper>

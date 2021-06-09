@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neighbor.ServiceAPI.dao.mapper.emrgncyCallHist">
+	
+	<insert id="emrgncyCall">
+		INSERT INTO EMRGNCY_CALL_HIST
+			(
+				COLCT_DT, MBER_ID, CNTER_CD, LC_CRDNT_X, LC_CRDNT_Y, ADRES, CNFIRM_AT
+			)
+		VALUES
+			(
+				DATE_FORMAT(#{colct_dt}, '%Y-%m-%d %T'), #{mber_id}, #{cnter_cd}, 
+				CAST(#{lc_crdnt_x} AS DECIMAL(10,7)), CAST(#{lc_crdnt_y} AS DECIMAL(10,7)), 
+				#{adres}, #{cnfirm_at}
+			)
+	</insert>
+	
+</mapper>

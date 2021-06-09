@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="commonCDMng">
+	
+	<!-- 공통코드목록조회 -->
+	<select id="selectCommonCDMngListA" parameterType="hashmap" resultType="hashmap">
+		SELECT C.* FROM 
+			(
+			SELECT @rownum := @rownum + 1 AS rnum, B.* FROM
+				(
+				SELECT A.CD_ID, A.CD_DE AS CD_DESC
+				FROM CMMN_CD_INFO A,  
+					( SELECT @rownum := 0 ) R
+				WHERE 1 = 1
+				<if test="CD_ID != null">
+					AND A.CD_ID LIKE CONCAT('%',#{CD_ID},'%')
+				</if>
+				<if test="CD_DESC != null">
+					AND A.CD_DE LIKE CONCAT('%',#{CD_DESC},'%')
+				</if>
+				ORDER BY A.CD_ID
+				) B
+			) C
+		<if test="page != null">
+			WHERE C.rnum BETWEEN (1 +(#{page}-1) * 6) AND (#{page}*6)	
+		</if>
+	</select>
+	
+	<!-- 공통코드목록 COUNT -->
+	<select id="selectCommonCDMngListCountA" parameterType="hashmap" resultType="hashmap">
+		SELECT COUNT(*) AS CNT
+		FROM CMMN_CD_INFO A 
+		WHERE 1 = 1
+		<if test="CD_ID != null">
+			AND A.CD_ID LIKE CONCAT('%',#{CD_ID},'%')
+		</if>
+		<if test="CD_DESC != null">
+			AND A.CD_DE LIKE CONCAT('%',#{CD_DESC},'%')
+		</if>
+	</select>
+	
+	<!-- 공통코드상세목록조회 -->
+	<select id="selectCommonCDMngListB" parameterType="hashmap" resultType="hashmap">
+		SELECT C.* FROM 
+			(
+			SELECT @rownum := @rownum + 1 AS rnum, B.* FROM
+				(
+				SELECT 
+					A.CD_ID
+					, A.CD_VALUE AS CD_VAL
+					, A.CD_VALUE_DE AS CD_VAL_DESC
+					, B.CD_DE AS CD_DESC
+				FROM CMMN_CD_VALUE_INFO A 
+					LEFT OUTER JOIN CMMN_CD_INFO B ON A.CD_ID = B.CD_ID, 
+					( SELECT @rownum := 0 ) R
+				WHERE A.CD_ID = #{CD_ID}
+				<if test="CD_DESC != null">
+					AND B.CD_DE LIKE CONCAT('%',#{CD_DESC},'%')
+				</if>
+				ORDER BY A.CD_ID, A.CD_VALUE
+				) B
+			) C
+		<if test="page != null">
+			WHERE C.rnum BETWEEN (1 +(#{page}-1) * 6) AND (#{page}*6)	
+		</if>
+	</select>
+	
+	<!-- 공통코드상세목록 COUNT -->
+	<select id="selectCommonCDMngListCountB" parameterType="hashmap" resultType="hashmap">
+		SELECT COUNT(*) AS CNT
+		FROM CMMN_CD_VALUE_INFO A 
+			LEFT OUTER JOIN CMMN_CD_INFO B ON A.CD_ID = B.CD_ID, 
+			( SELECT @rownum := 0 ) R
+		WHERE A.CD_ID = #{CD_ID}
+		<if test="CD_DESC != null">
+			AND B.CD_DESC LIKE CONCAT('%',#{CD_DESC},'%')
+		</if>
+	</select>
+	
+	<!-- 공통코드상세A -->
+	<select id="selectCommonCDMngDetailA" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+			CD_ID
+			, CD_DE AS CD_DESC
+		FROM CMMN_CD_INFO 
+		WHERE CD_ID = #{CD_ID}
+	</select>
+	
+	<!-- 공통코드상세B -->
+	<select id="selectCommonCDMngDetailB" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+			A.CD_ID
+			, A.CD_VALUE AS CD_VAL
+			, A.CD_VALUE_DE AS CD_VAL_DESC
+			, B.CD_DE AS CD_DESC
+		FROM CMMN_CD_VALUE_INFO A
+			LEFT OUTER JOIN CMMN_CD_INFO B ON A.CD_ID = B.CD_ID
+		WHERE A.CD_ID = #{CD_ID} AND A.CD_VALUE = #{CD_VAL}
+	</select>
+	
+	
+	<!-- 공통코드중복체크 -->
+	<select id="selectCommonCDMngIdCheck" parameterType="hashmap" resultType="hashmap">
+		SELECT COUNT(*) AS CNT
+		FROM CMMN_CD_INFO A 
+			<if test='CD_GUBN != null and CD_GUBN == "B"' >
+				LEFT OUTER JOIN CMMN_CD_VALUE_INFO B ON A.CD_ID = B.CD_ID
+			</if>
+		WHERE A.CD_ID = #{CD_ID}
+		<if test='CD_GUBN != null and CD_GUBN == "B"' >
+			AND B.CD_VALUE = #{CD_VAL}
+		</if>
+	</select>
+	
+	<!-- 공통코드등록 -->
+	<insert id="commonCDMngInsertA" parameterType="hashmap">
+		INSERT INTO CMMN_CD_INFO 
+			(
+				CD_ID, CD_DE   
+		 	)
+		VALUES 
+			(
+				#{CD_ID}, #{CD_DESC} 
+        	)	
+	</insert>
+	
+	<!-- 공통코드상세등록 -->
+	<insert id="commonCDMngInsertB" parameterType="hashmap">
+		INSERT INTO CMMN_CD_VALUE_INFO 
+			(
+				CD_ID, CD_VALUE, CD_VALUE_DE      
+		 	)
+		VALUES 
+			(
+				#{CD_ID}, #{CD_VAL}, #{CD_VAL_DESC}
+        	)	
+	</insert>
+	
+	<!-- 공통코드수정 -->
+	<update id="commonCDMngUpdateA" parameterType="hashmap">
+		UPDATE CMMN_CD_INFO SET 
+			CD_DE = #{CD_DESC}
+		WHERE CD_ID = #{CD_ID}	
+	</update>
+	
+	<!-- 공통코드상세수정 -->
+	<update id="commonCDMngUpdateB" parameterType="hashmap">
+		UPDATE CMMN_CD_VALUE_INFO SET 
+			CD_VALUE_DE = #{CD_VAL_DESC}
+		WHERE CD_ID = #{CD_ID}
+			AND CD_VALUE = #{CD_VAL}	
+	</update>
+	
+</mapper>

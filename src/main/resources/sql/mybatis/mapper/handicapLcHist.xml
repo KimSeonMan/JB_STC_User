@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neighbor.ServiceAPI.dao.mapper.handicapLcHist">
+
+	<resultMap type="handicapLcHist" id="handicapLcHist">
+		<result property="colct_dt" column="COLCT_DT"/>
+		<result property="mber_id" column="MBER_ID"/>
+		<result property="cnter_cd" column="CNTER_CD"/>
+		<result property="lc_crdnt_x" column="LC_CRDNT_X"/>
+		<result property="lc_crdnt_y" column="LC_CRDNT_Y"/>
+		<result property="gps_ennc" column="GPS_ENNC"/>
+		<result property="mvmn_drc" column="MVMN_DRC"/>
+	</resultMap>
+	
+	<insert id="insertHandicapLcHist">
+		INSERT INTO HANDICAP_LC_HIST
+			(
+				COLCT_DT, MBER_ID, CNTER_CD, 
+				<if test="gps_ennc != null">
+					GPS_ENNC,
+				</if>
+				<if test="mvmn_drc != null">
+					MVMN_DRC,
+				</if>  
+				LC_CRDNT_X, LC_CRDNT_Y
+			)
+		values
+			(
+				DATE_FORMAT(#{colct_dt}, '%Y-%m-%d %T'), #{mber_id}, #{cnter_cd}, 
+				<if test="gps_ennc != null">
+					#{gps_ennc},
+				</if>
+				<if test="mvmn_drc != null">
+					CAST(#{mvmn_drc} AS UNSIGNED), 
+				</if>  
+				CAST(#{lc_crdnt_x} AS DECIMAL(10,7)), CAST(#{lc_crdnt_y} AS DECIMAL(10,7))
+			)
+	</insert>
+
+</mapper>

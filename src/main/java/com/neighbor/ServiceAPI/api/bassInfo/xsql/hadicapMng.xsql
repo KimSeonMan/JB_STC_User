@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="hadicapMng">
+	
+	<!-- 이용자정보관리목록조회 -->
+	<select id="selectHadicapMngList" parameterType="hashmap" resultType="hashmap">
+		SELECT C.* FROM 
+			(
+			SELECT @rownum := @rownum + 1 AS rnum, B.* FROM
+					(
+					SELECT
+						A.MBER_ID AS USER_ID, B.WELFAIR_CARD_NO, A.MBER_NM AS NAME, A.BRTHDY AS BIRTH_DATE,
+						CONCAT(A.ADRES, ' ', A.ADRES_DETAIL) AS ADDRESS, A.MBTLNUM AS MOBILE, A.EMAIL,   
+						A.SMS_RECPTN_AT AS SMS_RECEIVE_YN, B.SUPPORTER_YN, B.COMMUNICALBE_YN, A.REGISTER_ID AS REG_USER_ID,
+						IF(B.WHEELCHAIR_CD = '00', 'N', 'Y') AS WHEELCHAIR_CD,
+						IFNULL(DATE_FORMAT(A.REGIST_DT, '%Y-%m-%d'),'') AS REG_TS,
+						(SELECT CD_VALUE_DE AS CM_CD_VAL
+						 FROM CMMN_CD_VALUE_INFO 
+						 WHERE CD_ID = 'TROBL_KND_CD' 
+							AND CD_VALUE = B.TROBL_GRAD) AS DISABLE_TYPE1_DESC
+					FROM MBER_INFO A 
+					LEFT OUTER JOIN HANDICAP_INFO B ON A.MBER_ID = B.MBER_ID,
+					( SELECT @rownum := 0 ) R
+					WHERE A.MBER_SE_CD = '10'
+						AND A.MBER_STTUS_CD NOT IN ('00','01')
+					<if test="ASSTN_PERSON_ENNC != null">
+						AND B.ASSTN_PERSON_ENNC = #{ASSTN_PERSON_ENNC}	
+					</if>
+					<if test="MBER_NM != null">
+						AND A.MBER_NM LIKE CONCAT('%',#{MBER_NM},'%')
+					</if>
+					ORDER BY A.REGIST_DT DESC
+					) B
+			WHERE 1 = 1
+			<if test="ADRES != null">
+				AND B.ADRES LIKE CONCAT('%',#{ADRES},'%')	
+			</if>
+			) C
+		<if test="page != null">
+			WHERE C.rnum BETWEEN (1 +(#{page}-1) * 10) AND (#{page}*10)	
+		</if>
+	</select>
+	
+	<!-- 이용자정보관리목록 COUNT -->
+	<select id="selectHadicapMngListCount" parameterType="hashmap" resultType="hashmap">
+		SELECT COUNT(*) AS CNT FROM
+				(
+				SELECT
+					CONCAT(A.ADRES, ' ', A.ADRES_DETAIL) AS ADDRESS   
+				FROM MBER_INFO A 
+				LEFT OUTER JOIN HANDICAP_INFO B ON A.MBER_ID = B.MBER_ID
+				WHERE A.MBER_SE_CD = '10'
+					AND A.MBER_STTUS_CD NOT IN ('00','01')
+				<if test="ASSTN_PERSON_ENNC != null">
+					AND B.ASSTN_PERSON_ENNC = #{ASSTN_PERSON_ENNC}	
+				</if>
+				<if test="MBER_NM != null">
+					AND A.MBER_NM LIKE CONCAT('%',#{MBER_NM},'%')
+				</if>
+				) B
+		WHERE 1 = 1
+		<if test="ADRES != null">
+			AND B.ADRES LIKE CONCAT('%',#{ADRES},'%')	
+		</if>
+	</select>
+	
+	<!-- 이용자목록 COUNT -->
+	<select id="hadicapMngCount" parameterType="hashmap" resultType="int">
+		SELECT COUNT(*)
+		FROM MBER_INFO
+		WHERE MBER_SE_CD = #{MBER_SE_CD}
+	</select>
+	
+</mapper>

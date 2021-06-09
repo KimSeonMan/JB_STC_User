@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="userMng">
+
+	<!-- 회원관리 목록 -->
+	<select id="selectUserMngList" parameterType="hashmap" resultType="hashmap">
+		SELECT C.* FROM 
+			(
+			SELECT @rownum := @rownum + 1 AS rnum, B.* FROM
+				(
+				SELECT 
+					(SELECT CD_VALUE_DE
+					 FROM CMMN_CD_VALUE_INFO 
+					 WHERE CD_ID = 'MBER_SE_CD' 
+					 	AND CD_VALUE = A.MBER_SE_CD) AS SE_CD
+					, A.MBER_SE_CD
+					, A.MBER_ID
+					, A.MBER_NM
+					, A.TELNO
+					, CONVERT(AES_DECRYPT(UNHEX(A.MBTLNUM), 'raison') USING EUCKR) AS PHONE
+					, IF(A.MBER_NT_CD = 1,'내국인','외국인') AS MBER_NT_CD
+					, IFNULL(A.REGISTER_ID,'') AS REGISTER_ID
+					, IFNULL(DATE_FORMAT(A.REGIST_DT, '%Y-%m-%d'),'') AS REGIST_DT
+					, (SELECT CD_VALUE_DE
+					 FROM CMMN_CD_VALUE_INFO 
+					 WHERE CD_ID = 'MBER_STTUS_CD' 
+					 	AND CD_VALUE = A.MBER_STTUS_CD) AS CD_VALUE_DE
+						FROM MBER_INFO A, ( SELECT @rownum := 0 ) R
+						WHERE 1 = 1
+				
+					<if test="MBER_SE_CD != null">
+						AND A.MBER_SE_CD = #{MBER_SE_CD}	
+					</if>
+					<if test="MBER_STTUS_CD != null">
+						AND A.MBER_STTUS_CD = #{MBER_STTUS_CD}	
+					</if>
+					<if test="MBER_NM != null">
+						AND A.MBER_NM LIKE CONCAT('%',#{MBER_NM},'%')
+					</if>
+				
+				ORDER BY A.REGIST_DT DESC
+				) B
+			) C
+		
+			<if test="page != null">
+				WHERE C.rnum BETWEEN (1 +(#{page}-1) * 10) AND (#{page}*10)	
+			</if>
+	
+	</select>
+	
+	<!-- 회원관리 목록 COUNT -->
+	<select id="selectUserMngListCount" parameterType="hashmap" resultType="hashmap">
+		SELECT COUNT(*) AS CNT
+		FROM MBER_INFO A
+		WHERE 1 = 1
+		<if test="MBER_SE_CD != null">
+			AND A.MBER_SE_CD = #{MBER_SE_CD}	
+		</if>
+		<if test="MBER_STTUS_CD != null">
+			AND A.MBER_STTUS_CD = #{MBER_STTUS_CD}	
+		</if>
+		<if test="MBER_NM != null">
+			AND A.MBER_NM LIKE CONCAT('%',#{MBER_NM},'%')
+		</if>
+	</select>
+	
+	<!-- 모든 센터 조회 -->
+	<select id="selectCenter" parameterType="hashmap" resultType="hashmap">
+		SELECT
+					 CNTER_CD
+				   , CNTER_NM
+		  FROM  CNTER_INFO
+		  WHERE CNTER_CD LIKE CONCAT('ARE-','%')
+			
+	</select>
+	
+	<!-- 회원 구분 조회 -->
+	<select id="selectMemberCode" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+					 CD_ID
+				   , CD_VALUE
+				   , CD_VALUE_DE
+		  FROM CMMN_CD_VALUE_INFO
+		WHERE CD_ID = 'MBER_SE_CD'
+	</select>
+	
+	<!-- EMAIL LIST 조회 -->
+	<select id="selectEmailList" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+					 CD_ID
+				   , CD_VALUE
+				   , CD_VALUE_DE
+		  FROM CMMN_CD_VALUE_INFO
+		WHERE CD_ID = 'EMAIL_SE_CD'
+	</select>
+	
+	<!-- 장애종류 조회 -->
+	<select id="selectTroblCode" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+					 CD_ID
+				   , CD_VALUE
+				   , CD_VALUE_DE
+		  FROM CMMN_CD_VALUE_INFO
+		WHERE CD_ID = 'TROBL_KND_CD'
+	</select>
+	
+	<!-- 휠체어 구분 조회 -->
+	<select id="selectWheelchair" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+					 CD_ID
+				   , CD_VALUE
+				   , CD_VALUE_DE
+		  FROM CMMN_CD_VALUE_INFO
+		WHERE CD_ID = 'WHEELCHAIR_SE_CD'
+	</select>
+	
+	<!-- 유선전화 지역번호 조회 -->
+	<select id="selectAreaTelNo" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+					 CD_ID
+				   , CD_VALUE
+				   , CD_VALUE_DE
+		  FROM CMMN_CD_VALUE_INFO
+		WHERE CD_ID = 'AREA_NO_SE_CD'
+	</select>
+	
+	<!-- 휴대전화 앞번호 조회 -->
+	<select id="selectPhoneNo" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+					 CD_ID
+				   , CD_VALUE
+				   , CD_VALUE_DE
+		  FROM CMMN_CD_VALUE_INFO
+		WHERE CD_ID = 'MBTLNUM_SE_CD'
+	</select>
+	
+	<!-- 회원관리 상세 -->
+	<select id="selectUserMngDetail" parameterType="hashmap" resultType="hashmap">
+		SELECT
+			A.MBER_ID
+		  , A.MBER_NM
+		  , DATE_FORMAT(CONVERT(AES_DECRYPT(UNHEX(A.BRTHDY), 'raison') USING EUCKR), '%Y-%m-%d') AS BIRTHDY
+		  , IFNULL(A.TELNO, '') AS TEL_NO
+          , CONVERT(AES_DECRYPT(UNHEX(A.MBTLNUM), 'raison') USING EUCKR) AS PHONE
+		  , A.ADRES AS ADDRESS
+		  , A.ADRES_DETAIL
+		  , A.SMS_RECPTN_AT
+		  , A.ZIP
+		  , A.EMAIL
+		  , A.MBER_SE_CD
+		  , A.CNTER_CD
+          , E.CNTER_NM
+          , A.MBER_NT_CD
+          , A.SEXDSTN AS GENDER
+		  , (SELECT CD_VALUE_DE 
+			   FROM CMMN_CD_VALUE_INFO 
+			  WHERE CD_ID = 'MBER_SE_CD' 
+				AND CD_VALUE = A.MBER_SE_CD) AS SE_CD
+				    , A.SMS_RECPTN_AT AS SMS_RECPTN
+				    
+			<if test="MBER_SE_CD == '10'">
+					, B.CNTER_CD
+                    , B.WHEELCHAIR_USE_PD
+                    , B.TROBL_KND_CD
+                    , B.TROBL_GRAD
+                    , B.ASSTN_PERSON_ENNC
+                    , B.WHEELCHAIR_SE_CD
+                    , B.ASSTN_NEED_AT
+                    , B.DS_MLRD_POSBL_AT
+                    , (SELECT CD_VALUE_DE 
+						 FROM CMMN_CD_VALUE_INFO 
+						 WHERE CD_ID = 'TROBL_KND_CD' 
+						   AND CD_VALUE = B.TROBL_KND_CD) AS KND_CD
+                               ,B.TROBL_GRAD AS GRAD
+                                        , IF(B.ASSTN_PERSON_ENNC = 'Y','예','아니오') AS ASSTN_PERSON
+                                        , (SELECT CD_VALUE_DE 
+					                         FROM CMMN_CD_VALUE_INFO 
+					                        WHERE CD_ID = 'WHEELCHAIR_SE_CD' 
+						                      AND CD_VALUE = B.WHEELCHAIR_SE_CD) AS WHEELCHAIR
+                                                  , IF(B.ASSTN_NEED_AT = 'Y','예','아니오') AS ASSTN_NEED
+                                                  , IF(B.DS_MLRD_POSBL_AT = 'Y','예','아니오') AS DS_MLRD_POSBL
+                                                  , F.ATCHMNFL_REAL_NM
+			</if>
+			<if test="MBER_SE_CD == '20'">
+					, C.ASSTN_LCNSE_NO
+					, C.WORK_DE
+					, C.WORK_TMZON
+			</if>
+			<if test="MBER_SE_CD == '30'">
+				    , D.WORK_DE
+					, D.WORK_TMZON
+                    , D.VHCLE_NO
+                    , D.RM
+			</if>
+			<if test="MBER_SE_CD == '40'">
+					, G.STATION_NM
+					, G.STATION_LINE
+					, G.WORK_DE
+					, G.WORK_TMZON
+			</if>
+				FROM MBER_INFO A
+			<if test="MBER_SE_CD == '10'">
+			 LEFT OUTER JOIN HANDICAP_INFO B 
+               ON A.MBER_ID = B.MBER_ID
+             LEFT OUTER JOIN ATCHMNFL_INFO F
+			   ON F.ATCHMNFL_NO = B.ATCHMNFL_NO
+			</if>
+			<if test="MBER_SE_CD == '20'">
+			LEFT OUTER JOIN ASSTN_PERSON_INFO C
+               ON A.MBER_ID = C.MBER_ID
+			</if>
+			<if test="MBER_SE_CD == '30'">
+				LEFT OUTER JOIN DRVER_INFO D
+                  ON A.MBER_ID = D.MBER_ID
+			</if>
+			<if test="MBER_SE_CD == '40'">
+				LEFT OUTER JOIN STATION_PERSON_INFO G
+                  ON A.MBER_ID = G.MBER_ID
+			</if>	
+			LEFT OUTER JOIN CNTER_INFO E
+      		  ON A.CNTER_CD = E.CNTER_CD
+			 WHERE A.MBER_ID = #{MBER_ID}
+	</select>
+	
+	<!-- 회원가입승인 -->
+	<update id="userMngUpdate" parameterType="hashmap">
+		UPDATE MBER_INFO SET
+			MBER_STTUS_CD = '02'
+		WHERE MBER_ID = #{MBER_ID}	
+	</update>
+
+	<!-- 이지페이 배치키 조회, Yudy -->
+        <select id="searchEasypayBatchkey" parameterType="hashmap" resultType="hashmap">
+        SELECT EP_BATCHKEY
+        FROM  HANDICAP_INFO
+        WHERE MBER_ID = #{MBER_ID}
+        AND CNTER_CD = #{CNTER_CD}
+        </select>
+
+    <!-- 이지페이 배치키 삭제, Yudy -->
+        <update id="easypayBatchkeyDelete" parameterType="hashmap">
+         UPDATE HANDICAP_INFO SET
+         EP_BATCHKEY = NULL,
+         EP_BATCHKEY_DT = now()
+         WHERE MBER_ID = #{MBER_ID}
+         </update>
+
+    <!-- 이지페이 배치키 등록, Yudy -->
+         <update id="easypayBatchkeyUpdate" parameterType="hashmap">
+         UPDATE HANDICAP_INFO SET
+         EP_BATCHKEY = #{EP_BATCHKEY},
+         EP_BATCHKEY_DT = now()
+         WHERE MBER_ID = #{MBER_ID}
+         </update>
+</mapper>

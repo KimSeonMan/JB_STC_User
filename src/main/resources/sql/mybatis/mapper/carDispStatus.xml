@@ -1,0 +1,785 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neighbor.ServiceAPI.dao.mapper.carDispStatus">
+    <select id="getTotal" parameterType="carDispStatusCommand" resultType="java.lang.Integer">
+    SELECT
+		count(A.SN) as total
+	FROM CARALC_HIST A
+		LEFT OUTER JOIN RCEPT_HIST B
+	    ON A.MBER_ID = B.MBER_ID AND A.RESVE_DT = B.RESVE_DT AND A.CNTER_CD = B.CNTER_CD
+		, MBER_INFO C
+	WHERE A.CARALC_STTUS_CD IN ('10', '30', '70')
+		AND A.RESVE_DT > DATE(NOW())
+		AND A.SN IN (SELECT MAX(SN) FROM CARALC_HIST GROUP BY RESVE_DT,MBER_ID)
+		AND A.MBER_ID = C.MBER_ID
+		<if test="sessionCnterCd != null">
+		AND A.CHRG_CNTER_CD  =  #{sessionCnterCd}
+		</if>
+		<if test="rceptSeCd != 'ALL'">
+		AND B.RCEPT_SE_CD = #{rceptSeCd}
+		</if>
+		<if test="mber_name!=null">
+		AND C.MBER_NM LIKE CONCAT('%', #{mber_name}, '%')
+		</if>
+	ORDER BY A.RESVE_DT
+    </select>
+    <select id="selectRceptList" parameterType="carDispStatusCommand" resultType="carDispStatusDomain">
+    SELECT Y.*
+	FROM (
+	    SELECT X.*, @rownum:=@rownum+1 as rnum
+		FROM (
+		    SELECT
+				A.SN
+				, C.MBER_ID, C.MBER_NM
+				, B.RCEPT_SE_CD
+				, (SELECT CD_VALUE_DE FROM CMMN_CD_VALUE_INFO WHERE CD_ID = 'RCEPT_SE_CD' AND CD_VALUE=B.RCEPT_SE_CD) AS RCEPT_SE_NM
+			    , DATE_FORMAT(A.RESVE_DT, '%Y-%m-%d') as resve_date
+			    , DATE_FORMAT(A.RESVE_DT, '%H:%i') as resve_time
+			    , A.RESVE_DT
+			    , B.MVMN_TY_CD
+			    , (SELECT CD_VALUE_DE FROM CMMN_CD_VALUE_INFO WHERE CD_ID = 'MVMN_TY_CD' AND CD_VALUE=B.MVMN_TY_CD) AS MVMN_TY_NM
+			    , B.START_LC_CRDNT_X AS LON
+			    , B.START_LC_CRDNT_Y AS LAT
+			    , CONCAT(C.MBER_NM, '(', IFNULL(CONVERT(AES_DECRYPT(UNHEX(C.MBTLNUM), 'raison') using EUCKR), ' '), ')') AS MBER_NAME
+			    , A.CARALC_STTUS_CD as caralcSttusCd
+				, B.CNTER_CD as cnterCd
+			    , B.STRTPNT_ADRES
+			    , B.ALOC_ADRES
+			    , B.ROUNDTRIP_AT
+			    , B.MVMN_PURPS_CD
+			    , B.WHEELCHAIR_SE_CD
+			    , B.BRDNG_NMPR
+			    , B.RM
+			    , B.PBTRNSP_TRNSIT_AT
+			    ,(
+			            CASE
+			                WHEN B.RCEPT_SE_CD = 10
+			                	AND A.CARALC_STTUS_CD IN ('10', '30')
+			                THEN CONV(( 
+					               SELECT 
+					                  COUNT(*) 
+					               FROM
+					                  (SELECT 
+					                  A.RESVE_DT,
+					                     A.CHRG_CNTER_CD,
+					                     MAX(A.CARALC_STTUS_CD) AS CARALC_STTUS_CD
+					               FROM
+					                  CARALC_HIST A, RCEPT_HIST B
+					               WHERE
+					                  A.MBER_ID = B.MBER_ID
+					                     AND A.CNTER_CD = B.CNTER_CD
+					                     AND A.RESVE_DT = B.RESVE_DT
+					                     AND B.RCEPT_SE_CD = '10'
+					                     AND A.RESVE_DT  > DATE(NOW())
+					               GROUP BY A.RESVE_DT , A.CHRG_CNTER_CD, A.MBER_ID) U
+					               WHERE 1 = 1
+					               AND U.CHRG_CNTER_CD = A.CHRG_CNTER_CD
+					               AND U.CARALC_STTUS_CD IN ('10', '30')
+					               AND U.RESVE_DT BETWEEN DATE(now()) AND A.RESVE_DT
+					          ), 16, 10) 
+			                ELSE '-'
+			                END
+			            )    AS WAIT_NMPR
+			FROM CARALC_HIST A
+				LEFT OUTER JOIN RCEPT_HIST B
+			    ON A.MBER_ID = B.MBER_ID AND A.RESVE_DT = B.RESVE_DT AND A.CNTER_CD = B.CNTER_CD
+				, MBER_INFO C
+				, (SELECT @rownum:=0) TMP
+			WHERE A.CARALC_STTUS_CD IN ('10', '30', '70')
+				AND A.RESVE_DT > DATE(NOW())
+				AND A.SN IN (SELECT MAX(SN) FROM CARALC_HIST GROUP BY RESVE_DT,MBER_ID)
+				AND A.MBER_ID = C.MBER_ID
+				<if test="sessionCnterCd != null">
+				AND A.CHRG_CNTER_CD  =  #{sessionCnterCd}
+				</if>
+				<if test="rceptSeCd != 'ALL'">
+				AND B.RCEPT_SE_CD = #{rceptSeCd}
+				</if>
+				<if test="mber_name!=null">
+				AND C.MBER_NM LIKE CONCAT('%', #{mber_name}, '%')
+				</if>
+			ORDER BY A.CARALC_STTUS_CD, A.RESVE_DT ASC
+		)X
+		WHERE @rownum <![CDATA[<]]> #{page.limit}
+	) Y
+	WHERE rnum <![CDATA[>=]]> #{page.offset}
+    </select>
+    <select id="selectDetail" parameterType="carDispStatusCommand" resultType="carDispDetailDomain">
+    SELECT 
+		B.RCEPT_SE_CD
+	    , A.CARALC_STTUS_CD
+		, B.CNTER_CD
+	    , DATE_FORMAT(A.RESVE_DT, '%Y-%m-%d') as resve_date
+	    , DATE_FORMAT(A.RESVE_DT, '%T') as resve_time
+	    , A.RESVE_DT
+	    , A.CHRG_CNTER_CD
+	    , B.START_LC_CRDNT_X
+	    , B.START_LC_CRDNT_Y
+	    , B.ARVL_LC_CRDNT_X
+	    , B.ARVL_LC_CRDNT_Y
+	    , B.STRTPNT_ADRES
+	    , B.ALOC_ADRES
+	    , B.ROUNDTRIP_AT
+	    , B.MVMN_PURPS_CD
+	    , B.WHEELCHAIR_SE_CD
+	    , B.BRDNG_NMPR
+	    , B.RM
+	    , B.MVMN_TY_CD
+	FROM CARALC_HIST A
+		LEFT OUTER JOIN RCEPT_HIST B
+	    ON A.MBER_ID = B.MBER_ID AND A.RESVE_DT = B.RESVE_DT AND A.CNTER_CD = B.CNTER_CD
+	WHERE 1=1
+		AND A.MBER_ID = #{mber_id}
+	    AND A.RESVE_DT = date_format(#{resve_dt}, '%Y-%m-%d %T')
+	    AND A.SN IN (SELECT MAX(SN) FROM CARALC_HIST GROUP BY RESVE_DT,MBER_ID)
+    </select>
+    <select id="selectCaralcSetup" parameterType="java.lang.String" resultType="caralcSetupInfoDomain">
+    SELECT 
+		CNTER_CD
+	    , (case ROUNDTRIP_PERM_AT when 'Y' then '예' when 'N' then '아니오' END) ROUNDTRIP_PERM_AT
+	    , ALOC_REQRE_TIME
+	    , VHCLE_SEARCH_RADIUS
+	    , BEFFAT_RESVE_TIME_INTRVL 
+	    , (case VHCLE_MVMN_POSBL_AT when 'Y' then '예' when 'N' then '아니오' END) VHCLE_MVMN_POSBL_AT
+	    , POSBL_DSTNC
+	    , (case WDR_SCTN_OTHINST_MBER_USE_POSBL_AT when 'Y' then '예' when 'N' then '아니오' END) WDR_SCTN_OTHINST_MBER_USE_POSBL_AT
+	    , (case WHTHRC_OTHINST_MBER_USE_POSBL_AT when 'Y' then '예' when 'N' then '아니오' END) WHTHRC_OTHINST_MBER_USE_POSBL_AT
+	FROM CARALC_SETUP_INFO
+	WHERE CNTER_CD = #{cnter_cd}
+    </select>
+    <select id="selectCarStatus"  parameterType="carDispStatusCommand" resultType="vhcleInfoDomain">
+	   SELECT A.VHCLE_NO
+		FROM VHCLE_INFO A
+			, DRVER_INFO C
+			, WORK_INFO WI
+		WHERE A.VHCLE_NO = WI.VHCLE_NO
+			AND A.COPERTN_CARALC_AT = #{copertn_caralc_at}
+			AND A.RESVE_VHCLE_AT = 'Y'
+			AND A.CNTER_CD IN ( SELECT CNTER_CD FROM CNTER_INFO WHERE (UPPER_CNTER_CD = #{cnter_cd} OR CNTER_CD = #{cnter_cd}) AND USE_YN = 'Y' )
+			<if test="drver_sttus_cd != 'ALL'">
+				AND C.DRVER_STTUS_CD = #{drver_sttus_cd}
+				</if>
+				<choose>
+					<when test="vhcle_ty_cd != 'ALL'">
+					AND A.VHCLE_TY_CD = #{vhcle_ty_cd}
+					</when>
+					<when test="wheelchair_se_cd != '00' ">
+					AND A.VHCLE_TY_CD != 20
+					</when>
+					<otherwise></otherwise>
+				</choose>
+				AND A.CNTER_CD = WI.CNTER_CD
+			AND C.MBER_ID = WI.MBER_ID
+			AND WI.WORK_YN = 'Y'
+			AND DATE_FORMAT(WI.WORK_DT,'%Y-%m-%d') = DATE_FORMAT(#{resve_dt},'%Y-%m-%d')
+			AND	DATE_FORMAT(#{resve_dt},'%Y-%m-%d %T') 
+				BETWEEN CONCAT(DATE_FORMAT(#{resve_dt},'%Y-%m-%d '), WI.WORK_ST_TIME) AND CONCAT(DATE_FORMAT(#{resve_dt},'%Y-%m-%d '),WI.WORK_ED_TIME)
+			AND	DATE_FORMAT(#{resve_dt},'%Y-%m-%d %T') 
+				NOT BETWEEN CONCAT(DATE_FORMAT(#{resve_dt},'%Y-%m-%d '), WI.REST_ST_TIME) AND CONCAT(DATE_FORMAT(#{resve_dt},'%Y-%m-%d '),WI.REST_ED_TIME)
+		    AND A.VHCLE_NO NOT IN (SELECT VHCLE_NO
+									FROM (
+										SELECT A.RESVE_DT, A.VHCLE_NO, DATE_ADD(B.RESVE_DT, INTERVAL SUBSTRING_INDEX(EXPECT_REQRE_TIME, '.', 1) MINUTE) AS ARR_TIME
+										FROM CARALC_HIST A
+											, RCEPT_HIST B
+										WHERE A.RESVE_DT = B.RESVE_DT 
+											AND A.CARALC_STTUS_CD = '70'
+											AND A.CHRG_CNTER_CD IN ( SELECT CNTER_CD FROM CNTER_INFO WHERE (UPPER_CNTER_CD = #{cnter_cd} OR CNTER_CD = #{cnter_cd}) AND USE_YN = 'Y' )
+											AND A.RESVE_DT >= date(NOW()) 
+										) A
+									WHERE ((#{resve_dt_def} <![CDATA[<=]]> RESVE_DT AND RESVE_DT <![CDATA[<=]]> #{resve_dt_arr}) 
+											OR (#{resve_dt_def} <![CDATA[<=]]> ARR_TIME AND ARR_TIME <![CDATA[<=]]> #{resve_dt_arr}))
+								)
+	</select>
+	<select id="carlcPossibleChk"  parameterType="carDispStatusCommand" resultType="HashMap">	    
+		SELECT	*
+		FROM		(
+					<choose>
+						<when test="mvmn_ty_cd == '20'">
+							SELECT	CAR_SHARE_CNT AS ALL_CAR
+							FROM	CNTER_INFO
+							WHERE	CNTER_CD = #{chrg_cnter_cd}
+						</when>
+						<otherwise>
+							SELECT	COUNT(*) AS ALL_CAR
+							FROM		CNTER_INFO CT
+							,			DRVER_INFO DV
+							,			VHCLE_INFO VI
+							,			WORK_INFO WI
+							WHERE	CT.CNTER_CD = VI.CNTER_CD
+							AND		CT.CNTER_CD = DV.CNTER_CD
+							AND 		WI.VHCLE_NO = VI.VHCLE_NO
+							AND 		VI.RESVE_VHCLE_AT = 'Y'
+							AND		CT.CNTER_CD = #{chrg_cnter_cd}
+							AND		WI.WORK_YN = 'Y'
+							AND		WI.CNTER_CD = CT.CNTER_CD
+							AND		DV.MBER_ID = WI.MBER_ID
+							AND DATE_FORMAT(WI.WORK_DT, '%Y-%m-%d') = DATE_FORMAT(#{resve_dt}, '%Y-%m-%d')
+						    AND	DATE_FORMAT(#{resve_dt},'%Y-%m-%d %T') 
+								BETWEEN CONCAT(DATE_FORMAT(#{resve_dt},'%Y-%m-%d '), WI.WORK_ST_TIME) AND CONCAT(DATE_FORMAT(#{resve_dt},'%Y-%m-%d '),WI.WORK_ED_TIME)
+							AND	DATE_FORMAT(#{resve_dt},'%Y-%m-%d %T') 
+								NOT BETWEEN CONCAT(DATE_FORMAT(#{resve_dt},'%Y-%m-%d '), WI.REST_ST_TIME) AND CONCAT(DATE_FORMAT(#{resve_dt},'%Y-%m-%d '),WI.REST_ED_TIME)
+							<if test="wheelchair_se_cd != '00' ">
+							AND		VI.VHCLE_TY_CD != 20
+							</if>
+						</otherwise>
+					</choose>
+					) A	
+		,			(
+						SELECT 	COUNT(*) AS USED_CAR
+						FROM 	(
+										SELECT	A.VHCLE_NO
+										, 			A.MBER_ID
+										, 			A.RESVE_DT
+										, 			B.EXPECT_ARLC_TIME
+										, 			D.*
+										, 			IF((A.RESVE_DT <![CDATA[>=]]> RESVE_B), IF((A.RESVE_DT <![CDATA[<=]]> RESVE_A), 'N','Y'), IF((B.EXPECT_ARLC_TIME <![CDATA[>]]> RESVE_B), 'N','Y')) AS CHK
+										FROM		CARALC_HIST A
+										,			(SELECT *, DATE_FORMAT(DATE_ADD(RESVE_DT, INTERVAL EXPECT_REQRE_TIME MINUTE), '%Y-%m-%d %T')EXPECT_ARLC_TIME FROM RCEPT_HIST)B 
+										,			(SELECT DATE_SUB(#{resve_dt}, INTERVAL 1 HOUR)RESVE_B, DATE_ADD(#{resve_dt}, INTERVAL 0 HOUR<!-- 30 MINUTE -->)RESVE_A)D
+										WHERE	A.SN IN (SELECT MAX(SN) FROM CARALC_HIST GROUP BY RESVE_DT,MBER_ID)
+										AND		A.MBER_ID=B.MBER_ID
+										AND		A.CNTER_CD=B.CNTER_CD
+										AND		A.RESVE_DT=B.RESVE_DT
+										AND		A.CHRG_CNTER_CD = #{chrg_cnter_cd}
+										AND		A.RESVE_DT <![CDATA[>=]]> RESVE_B
+										AND		A.RESVE_DT <![CDATA[<=]]> RESVE_A
+								) DT
+					) B
+	</select>
+
+	<select id="resveAbleTimeForHour" parameterType="hashmap" resultType="hashmap">
+		SELECT case when (IF(IFNULL(TOTCAR.CNT,0)<![CDATA[<]]>3, IFNULL(TOTCAR.CNT,0), ROUND(IFNULL(TOTCAR.CNT,0)*#{weight}))  <![CDATA[>]]>  USECAR.time00 ) then 'Y' else 'N' END as able00
+		, case when (IF(IFNULL(TOTCAR.CNT,0)<![CDATA[<]]>3, IFNULL(TOTCAR.CNT,0), ROUND(IFNULL(TOTCAR.CNT,0)*#{weight}))  <![CDATA[>]]>  USECAR.time10 ) then 'Y' else 'N' END as able10
+		, case when (IF(IFNULL(TOTCAR.CNT,0)<![CDATA[<]]>3, IFNULL(TOTCAR.CNT,0), ROUND(IFNULL(TOTCAR.CNT,0)*#{weight}))  <![CDATA[>]]>  USECAR.time20 ) then 'Y' else 'N' END as able20
+		, case when (IF(IFNULL(TOTCAR.CNT,0)<![CDATA[<]]>3, IFNULL(TOTCAR.CNT,0), ROUND(IFNULL(TOTCAR.CNT,0)*#{weight}))  <![CDATA[>]]>  USECAR.time30 ) then 'Y' else 'N' END as able30
+		, case when (IF(IFNULL(TOTCAR.CNT,0)<![CDATA[<]]>3, IFNULL(TOTCAR.CNT,0), ROUND(IFNULL(TOTCAR.CNT,0)*#{weight}))  <![CDATA[>]]>  USECAR.time40 ) then 'Y' else 'N' END as able40
+		, case when (IF(IFNULL(TOTCAR.CNT,0)<![CDATA[<]]>3, IFNULL(TOTCAR.CNT,0), ROUND(IFNULL(TOTCAR.CNT,0)*#{weight}))  <![CDATA[>]]>  USECAR.time50 ) then 'Y' else 'N' END as able50
+		FROM	(
+		<choose>
+			<when test="mvmn_ty_cd == '20'">
+				SELECT	CAR_SHARE_CNT AS CNT
+				FROM		CNTER_INFO
+				WHERE	CNTER_CD=#{chrg_cnter_cd}
+			</when>
+			<otherwise>
+				SELECT	COUNT(*) AS CNT
+				FROM		CNTER_INFO CT
+				,			DRVER_INFO DV
+				,			VHCLE_INFO VI
+				,			WORK_INFO WI
+				WHERE	CT.CNTER_CD = VI.CNTER_CD
+				AND		CT.CNTER_CD = DV.CNTER_CD
+				AND 		WI.VHCLE_NO = VI.VHCLE_NO
+				AND 		VI.RESVE_VHCLE_AT = 'Y'
+				AND		WI.WORK_YN ='Y'
+			    AND 	WI.CNTER_CD = CT.CNTER_CD
+			    AND 	WI.MBER_ID = DV.MBER_ID
+			    AND	 	DATE_FORMAT(WI.WORK_DT, '%Y-%m-%d') = DATE_FORMAT(#{resve_date}, '%Y-%m-%d')
+			    AND		DATE_FORMAT(#{resve_date},'%Y-%m-%d %T') 
+					BETWEEN CONCAT(DATE_FORMAT(#{resve_date},'%Y-%m-%d '), WI.WORK_ST_TIME) AND CONCAT(DATE_FORMAT(#{resve_date},'%Y-%m-%d '),WI.WORK_ED_TIME)
+				AND		DATE_FORMAT(#{resve_date},'%Y-%m-%d %T') 
+					NOT BETWEEN CONCAT(DATE_FORMAT(#{resve_date},'%Y-%m-%d '), WI.REST_ST_TIME) AND CONCAT(DATE_FORMAT(#{resve_date},'%Y-%m-%d '),WI.REST_ED_TIME)
+				AND		CT.CNTER_CD = #{chrg_cnter_cd}
+				<if test="wheelchair_se_cd != '00' ">
+					AND	VI.VHCLE_TY_CD != 20
+				</if>
+			</otherwise>
+		</choose>
+		) TOTCAR,
+	(SELECT IFNULL(SUM(TOT.rcep00),0) as time00
+		,IFNULL(SUM(TOT.rcep10),0) as time10
+		,IFNULL(SUM(TOT.rcep20),0) as time20
+		,IFNULL(SUM(TOT.rcep30),0) as time30
+		,IFNULL(SUM(TOT.rcep40),0) as time40
+		,IFNULL(SUM(TOT.rcep50),0) as time50
+		FROM (
+		SELECT case when (RH.RESVE_DT <![CDATA[>]]> DATE_SUB(T.r00, INTERVAL 1 HOUR) AND DATE_ADD(T.r00, INTERVAL 30 MINUTE) <![CDATA[>=]]> RH.RESVE_DT ) then 1 else 0 END as rcep00
+		, case when (RH.RESVE_DT <![CDATA[>]]> DATE_SUB(T.r10, INTERVAL 1 HOUR) AND  DATE_ADD(T.r10, INTERVAL 0 HOUR) <![CDATA[>=]]> RH.RESVE_DT) then 1 else 0 END as rcep10
+		, case when (RH.RESVE_DT <![CDATA[>]]> DATE_SUB(T.r20, INTERVAL 1 HOUR) AND  DATE_ADD(T.r20, INTERVAL 0 HOUR) <![CDATA[>=]]> RH.RESVE_DT) then 1 else 0 END as rcep20
+		, case when (RH.RESVE_DT <![CDATA[>]]> DATE_SUB(T.r30, INTERVAL 1 HOUR) AND  DATE_ADD(T.r30, INTERVAL 0 HOUR) <![CDATA[>=]]> RH.RESVE_DT) then 1 else 0 END as rcep30
+		, case when (RH.RESVE_DT <![CDATA[>]]> DATE_SUB(T.r40, INTERVAL 1 HOUR) AND  DATE_ADD(T.r40, INTERVAL 0 HOUR) <![CDATA[>=]]> RH.RESVE_DT) then 1 else 0 END as rcep40
+		, case when (RH.RESVE_DT <![CDATA[>]]> DATE_SUB(T.r50, INTERVAL 1 HOUR) AND  DATE_ADD(T.r50, INTERVAL 0 HOUR) <![CDATA[>=]]> RH.RESVE_DT) then 1 else 0 END as rcep50
+		FROM (SELECT #{resve_date} as r00
+		,DATE_ADD(#{resve_date}, INTERVAL 10 MINUTE) as r10
+		,DATE_ADD(#{resve_date}, INTERVAL 20 MINUTE) as r20
+		,DATE_ADD(#{resve_date}, INTERVAL 30 MINUTE) as r30
+		,DATE_ADD(#{resve_date}, INTERVAL 40 MINUTE) as r40
+		,DATE_ADD(#{resve_date}, INTERVAL 50 MINUTE) as r50
+		) T
+		,(SELECT A.RESVE_DT
+		FROM		CARALC_HIST A
+		,(SELECT *, DATE_FORMAT(DATE_ADD(RESVE_DT, INTERVAL EXPECT_REQRE_TIME MINUTE), '%Y-%m-%d %T')EXPECT_ARLC_TIME FROM RCEPT_HIST)B
+		WHERE	A.SN IN (SELECT MAX(SN) FROM CARALC_HIST GROUP BY RESVE_DT,MBER_ID)
+		AND		A.MBER_ID=B.MBER_ID
+		AND		A.CNTER_CD=B.CNTER_CD
+		AND		A.RESVE_DT=B.RESVE_DT
+		AND		A.CHRG_CNTER_CD=#{chrg_cnter_cd}
+		AND		DATE_FORMAT(A.RESVE_DT, '%Y-%m-%d') = DATE_FORMAT(#{resve_date}, '%Y-%m-%d')
+		) as RH
+		) TOT
+		) USECAR
+	</select>
+
+
+	<select id="findLcList" parameterType="carDispStatusCommand" resultType="carListDomain">
+		SELECT DRVER.MBER_ID
+			, DRVER.CNTER_CD
+			, DRVER.LC_CRDNT_X
+			, DRVER.LC_CRDNT_Y
+			, DRVER.VHCLE_NO
+			, DRVER.DRVER_STTUS_CD
+            , (6371*acos(cos(radians(#{sel_lc_crdnt_x}))*cos(radians(DRVER.LC_CRDNT_X))*cos(radians(DRVER.LC_CRDNT_Y)
+			-radians(#{sel_lc_crdnt_y}))+sin(radians(#{sel_lc_crdnt_x}))*sin(radians(DRVER.LC_CRDNT_X))))
+			AS distance
+			<if test="drver_sttus_cd == '30'">
+			, B.ARVL_LC_CRDNT_X
+            , B.ARVL_LC_CRDNT_Y
+            </if>
+		FROM (
+				SELECT A.VHCLE_NO
+					, D.MBER_ID
+					, D.CNTER_CD
+			        , D.LC_CRDNT_X
+			        , D.LC_CRDNT_Y
+			        , C.DRVER_STTUS_CD
+					FROM VHCLE_INFO A
+						, CNTER_INFO B
+						, DRVER_INFO C
+			            , DRVER_LC_HIST D
+			            ,(
+								SELECT MAX(COLCT_DT) AS COLCT_DT, MBER_ID
+								FROM DRVER_LC_HIST
+								WHERE CNTER_CD IN ( SELECT CNTER_CD FROM CNTER_INFO WHERE (UPPER_CNTER_CD = #{cnter_cd} OR CNTER_CD = #{cnter_cd}) AND USE_YN = 'Y' )
+								GROUP BY MBER_ID
+						) X
+					WHERE A.VHCLE_NO = C.VHCLE_NO
+						AND A.CNTER_CD = B.CNTER_CD
+			            AND D.MBER_ID = X.MBER_ID
+			            AND D.COLCT_DT = X.COLCT_DT
+			            AND X.MBER_ID = C.MBER_ID
+						AND A.COPERTN_CARALC_AT = #{copertn_caralc_at}
+						AND A.CNTER_CD IN ( SELECT CNTER_CD FROM CNTER_INFO WHERE (UPPER_CNTER_CD = #{cnter_cd} OR CNTER_CD = #{cnter_cd}) AND USE_YN = 'Y' )
+						<if test="drver_sttus_cd != 'ALL'">
+						AND C.DRVER_STTUS_CD = #{drver_sttus_cd}
+						</if>
+						<choose>
+							<when test="vhcle_ty_cd != 'ALL'">
+							AND A.VHCLE_TY_CD = #{vhcle_ty_cd}
+							</when>
+							<when test="wheelchair_se_cd != '00' ">
+							AND A.VHCLE_TY_CD != 20
+							</when>
+							<otherwise></otherwise>
+						</choose>
+						AND substring(C.WORK_DE, #{select_date}, 1) = 1
+						AND substring(C.WORK_TMZON, #{select_time}, 1) = 1
+					    AND A.VHCLE_NO NOT IN (SELECT VHCLE_NO
+												FROM (
+													SELECT A.RESVE_DT, A.VHCLE_NO, DATE_ADD(B.RESVE_DT, INTERVAL SUBSTRING_INDEX(EXPECT_REQRE_TIME, '.', 1) MINUTE) AS ARR_TIME
+													FROM CARALC_HIST A
+														, RCEPT_HIST B
+													WHERE A.RESVE_DT = B.RESVE_DT 
+														AND A.CARALC_STTUS_CD = '70'
+														AND A.CHRG_CNTER_CD IN ( SELECT CNTER_CD FROM CNTER_INFO WHERE (UPPER_CNTER_CD = #{cnter_cd} OR CNTER_CD = #{cnter_cd}) AND USE_YN = 'Y' )
+														AND A.RESVE_DT <![CDATA[>=]]> date(NOW()) 
+													) A
+												WHERE ((#{resve_dt_def} <![CDATA[<=]]> RESVE_DT AND RESVE_DT <![CDATA[<=]]> #{resve_dt_arr}) 
+														OR (#{resve_dt_def} <![CDATA[<=]]> ARR_TIME AND ARR_TIME <![CDATA[<=]]> #{resve_dt_arr}))
+											)
+		    ) DRVER
+		    <if test="drver_sttus_cd == '30'">
+		    , (SELECT VHCLE_NO
+				, ARVL_LC_CRDNT_X
+				, ARVL_LC_CRDNT_Y
+			FROM RCEPT_HIST A
+				,(
+					SELECT MIN(RESVE_DT) AS RESVE_DT, VHCLE_NO
+					FROM CARALC_HIST
+					WHERE 1=1
+						AND RESVE_DT <![CDATA[>=]]> date(now())
+						AND SN IN (SELECT MAX(SN) FROM CARALC_HIST GROUP BY RESVE_DT,MBER_ID)
+						AND VHCLE_NO IS NOT NULL
+						AND CARALC_STTUS_CD = '100'
+					GROUP BY VHCLE_NO
+				) B
+			WHERE A.RESVE_DT = B.RESVE_DT
+            ) B
+		WHERE DRVER.VHCLE_NO = B.VHCLE_NO
+		</if>
+		HAVING distance <![CDATA[<=]]> #{vhcleSearchRadius}
+		ORDER BY distance 
+	</select>
+	<select id="findLcList_drive" parameterType="carDispStatusCommand" resultType="carListDomain">
+		SELECT DRVER.MBER_ID
+			, DRVER.CNTER_CD
+			, DRVER.LC_CRDNT_X
+			, DRVER.LC_CRDNT_Y
+			, DRVER.VHCLE_NO
+			, DRVER.DRVER_STTUS_CD
+            , (6371*acos(cos(radians(#{sel_lc_crdnt_x}))*cos(radians(DRVER.LC_CRDNT_X))*cos(radians(DRVER.LC_CRDNT_Y)
+			-radians(#{sel_lc_crdnt_y}))+sin(radians(#{sel_lc_crdnt_x}))*sin(radians(DRVER.LC_CRDNT_X))))
+			AS distance
+			, B.ARVL_LC_CRDNT_X
+            , B.ARVL_LC_CRDNT_Y
+		FROM (
+				SELECT A.VHCLE_NO
+					, D.MBER_ID
+					, D.CNTER_CD
+			        , D.LC_CRDNT_X
+			        , D.LC_CRDNT_Y
+			        , C.DRVER_STTUS_CD
+					FROM VHCLE_INFO A
+						, CNTER_INFO B
+						, DRVER_INFO C
+			            , DRVER_LC_HIST D
+			            ,(
+								SELECT MAX(COLCT_DT) AS COLCT_DT, MBER_ID
+								FROM DRVER_LC_HIST
+								WHERE CNTER_CD IN ( SELECT CNTER_CD FROM CNTER_INFO WHERE (UPPER_CNTER_CD = #{cnter_cd} OR CNTER_CD = #{cnter_cd}) AND USE_YN = 'Y' )
+								GROUP BY MBER_ID
+						) X
+					WHERE A.VHCLE_NO = C.VHCLE_NO
+						AND A.CNTER_CD = B.CNTER_CD
+			            AND D.MBER_ID = X.MBER_ID
+			            AND D.COLCT_DT = X.COLCT_DT
+			            AND X.MBER_ID = C.MBER_ID
+						AND A.COPERTN_CARALC_AT = #{copertn_caralc_at}
+						AND A.CNTER_CD IN ( SELECT CNTER_CD FROM CNTER_INFO WHERE (UPPER_CNTER_CD = #{cnter_cd} OR CNTER_CD = #{cnter_cd}) AND USE_YN = 'Y' )
+						<if test="drver_sttus_cd != 'ALL'">
+						AND C.DRVER_STTUS_CD = #{drver_sttus_cd}
+						</if>
+						<choose>
+							<when test="vhcle_ty_cd != 'ALL'">
+							AND A.VHCLE_TY_CD = #{vhcle_ty_cd}
+							</when>
+							<when test="wheelchair_se_cd != '00' ">
+							AND A.VHCLE_TY_CD != 20
+							</when>
+							<otherwise></otherwise>
+						</choose>
+						AND substring(C.WORK_DE, #{select_date}, 1) = 1
+						AND substring(C.WORK_TMZON, #{select_time}, 1) = 1
+					    AND A.VHCLE_NO NOT IN (SELECT VHCLE_NO
+												FROM (
+													SELECT A.RESVE_DT, A.VHCLE_NO, DATE_ADD(B.RESVE_DT, INTERVAL SUBSTRING_INDEX(EXPECT_REQRE_TIME, '.', 1) MINUTE) AS ARR_TIME
+													FROM CARALC_HIST A
+														, RCEPT_HIST B
+													WHERE A.RESVE_DT = B.RESVE_DT 
+														AND A.CARALC_STTUS_CD = '70'
+														AND A.CHRG_CNTER_CD IN ( SELECT CNTER_CD FROM CNTER_INFO WHERE (UPPER_CNTER_CD = #{cnter_cd} OR CNTER_CD = #{cnter_cd}) AND USE_YN = 'Y' )
+														AND A.RESVE_DT <![CDATA[>=]]> date(NOW()) 
+													) A
+												WHERE ((#{resve_dt_def} <![CDATA[<=]]> RESVE_DT AND RESVE_DT <![CDATA[<=]]> #{resve_dt_arr}) 
+														OR (#{resve_dt_def} <![CDATA[<=]]> ARR_TIME AND ARR_TIME <![CDATA[<=]]> #{resve_dt_arr}))
+											)
+		    ) DRVER
+		    , (SELECT VHCLE_NO
+				, ARVL_LC_CRDNT_X
+				, ARVL_LC_CRDNT_Y
+			FROM RCEPT_HIST A
+				,(
+					SELECT MIN(RESVE_DT) AS RESVE_DT, VHCLE_NO
+					FROM CARALC_HIST
+					WHERE 1=1
+						AND RESVE_DT <![CDATA[>=]]> date(now())
+						AND SN IN (SELECT MAX(SN) FROM CARALC_HIST GROUP BY RESVE_DT,MBER_ID)
+						AND VHCLE_NO IS NOT NULL
+						AND CARALC_STTUS_CD = '100'
+					GROUP BY VHCLE_NO
+				) B
+			WHERE A.RESVE_DT = B.RESVE_DT
+            ) B
+		WHERE DRVER.VHCLE_NO = B.VHCLE_NO
+			AND DRVER.VHCLE_NO = #{sel_vhcle_no}
+		HAVING distance <![CDATA[<=]]> #{vhcleSearchRadius}
+		ORDER BY distance 
+	</select>
+	<select id="findCarInfo" parameterType="java.lang.String" resultType="carInfoDomain">
+	SELECT 
+		left(B.CNTER_NM, 2) AS CNTER_NAME
+		, A.VHCLE_NO
+	    , (SELECT CD_VALUE_DE FROM CMMN_CD_VALUE_INFO WHERE CD_ID = 'DRVER_STTUS_CD' AND CD_VALUE = C.DRVER_STTUS_CD) AS DRVER_STTUS_NAME
+	    , (SELECT CD_VALUE_DE FROM CMMN_CD_VALUE_INFO WHERE CD_ID = 'VHCLE_TY_CD' AND CD_VALUE= A.VHCLE_TY_CD) AS VHCLE_TY_NAME
+	    , D.LC_CRDNT_X
+        , D.LC_CRDNT_Y
+	FROM VHCLE_INFO A
+		, CNTER_INFO B
+	    , DRVER_INFO C
+	    , (
+			SELECT A.COLCT_DT, A.MBER_ID, A.LC_CRDNT_X, A.LC_CRDNT_Y
+			FROM DRVER_LC_HIST A
+				,(SELECT MBER_ID, MAX(COLCT_DT) AS COLCT_DT
+					FROM DRVER_LC_HIST
+					group by MBER_ID) B
+			WHERE A.COLCT_DT = B.COLCT_DT
+				AND A.MBER_ID = B.MBER_ID
+				) D
+	WHERE A.CNTER_CD = B.CNTER_CD
+		AND A.VHCLE_NO = C.VHCLE_NO
+		AND C.MBER_ID = D.MBER_ID
+	    AND A.VHCLE_NO = #{vhcle_no}
+	    AND B.USE_YN = 'Y'
+	</select>
+	<select id="findCarInfo_Work" parameterType="HashMap" resultType="carInfoDomain">
+		SELECT 
+		left(B.CNTER_NM, 2) AS CNTER_NAME
+		, A.VHCLE_NO
+	    , (SELECT CD_VALUE_DE FROM CMMN_CD_VALUE_INFO WHERE CD_ID = 'DRVER_STTUS_CD' AND CD_VALUE = C.DRVER_STTUS_CD) AS DRVER_STTUS_NAME
+	    , (SELECT CD_VALUE_DE FROM CMMN_CD_VALUE_INFO WHERE CD_ID = 'VHCLE_TY_CD' AND CD_VALUE= A.VHCLE_TY_CD) AS VHCLE_TY_NAME
+	    , D.LC_CRDNT_X
+        , D.LC_CRDNT_Y
+        , B.CNTER_CD
+	FROM VHCLE_INFO A
+		, CNTER_INFO B
+	    , DRVER_INFO C
+	    , (
+			SELECT A.COLCT_DT, A.MBER_ID, A.LC_CRDNT_X, A.LC_CRDNT_Y
+			FROM DRVER_LC_HIST A
+				,(SELECT MBER_ID, MAX(COLCT_DT) AS COLCT_DT
+					FROM DRVER_LC_HIST
+					group by MBER_ID) B
+			WHERE A.COLCT_DT = B.COLCT_DT
+				AND A.MBER_ID = B.MBER_ID
+				) D
+		, WORK_INFO WI
+	WHERE A.CNTER_CD = B.CNTER_CD
+		AND C.MBER_ID = D.MBER_ID
+	    AND A.VHCLE_NO = #{vhcle_no}
+	    AND B.USE_YN = 'Y'
+	    AND WI.WORK_YN ='Y'
+	    AND WI.CNTER_CD = B.CNTER_CD
+	    AND WI.MBER_ID = C.MBER_ID
+	    AND WI.VHCLE_NO = A.VHCLE_NO
+	    AND DATE_FORMAT(WI.WORK_DT, '%Y-%m-%d') = DATE_FORMAT(#{resve_dt}, '%Y-%m-%d')
+	    AND	DATE_FORMAT(<choose><when test="rcept_se_cd == '10'">NOW()</when><otherwise>#{resve_dt}</otherwise></choose>,'%Y-%m-%d %T') 
+			BETWEEN CONCAT(DATE_FORMAT(<choose><when test="rcept_se_cd == '10'">NOW()</when><otherwise>#{resve_dt}</otherwise></choose>,'%Y-%m-%d '), WI.WORK_ST_TIME) 
+			AND CONCAT(DATE_FORMAT(<choose><when test="rcept_se_cd == '10'">NOW()</when><otherwise>#{resve_dt}</otherwise></choose>,'%Y-%m-%d '),WI.WORK_ED_TIME)
+		AND	DATE_FORMAT(<choose><when test="rcept_se_cd == '10'">NOW()</when><otherwise>#{resve_dt}</otherwise></choose>,'%Y-%m-%d %T') 
+			NOT BETWEEN CONCAT(DATE_FORMAT(<choose><when test="rcept_se_cd == '10'">NOW()</when><otherwise>#{resve_dt}</otherwise></choose>,'%Y-%m-%d '), WI.REST_ST_TIME) 
+			AND CONCAT(DATE_FORMAT(<choose><when test="rcept_se_cd == '10'">NOW()</when><otherwise>#{resve_dt}</otherwise></choose>,'%Y-%m-%d '),WI.REST_ED_TIME)
+		</select>
+	<select id="selectRceptHist" parameterType="rceptHist" resultType="rceptHist">
+	SELECT RESVE_DT, MBER_ID, CNTER_CD, RCEPT_SE_CD, ONLINE_AT, PBTRNSP_TRNSIT_AT, ROUNDTRIP_AT, MVMN_PURPS_CD
+		, WHEELCHAIR_SE_CD, MVMN_TY_CD, BRDNG_NMPR, START_LC_CRDNT_X, START_LC_CRDNT_Y, ARVL_LC_CRDNT_X, ARVL_LC_CRDNT_Y, STRTPNT_ADRES, ALOC_ADRES
+	FROM RCEPT_HIST
+	WHERE 1=1
+		AND MBER_ID = #{mber_id}
+	    AND RESVE_DT = #{resve_dt}
+	</select>
+	<insert id="inserlCarDisp">
+	INSERT INTO CARALC_HIST 
+		    	(MBER_ID, CNTER_CD, RESVE_DT, CHRG_CNTER_CD, CARALC_STTUS_CD, REGISTER_ID, REGIST_DT) 
+			SELECT 
+				MBER_ID, CNTER_CD, 
+				<if test="resve_dt != null">
+				#{resve_dt},  
+				</if>
+				<if test="resve_dt == null">
+				RESVE_DT,   
+				</if>
+				#{chrg_cnter_cd},				
+				#{caralc_sttus_cd}, #{mber_id}, now()
+			FROM RCEPT_HIST
+			WHERE MBER_ID = #{mber_id}
+				AND CNTER_CD = #{cnter_cd}
+			ORDER BY RESVE_DT DESC LIMIT 1
+	</insert>
+	<update id="updateCaralcDetail">
+	UPDATE CARALC_HIST
+	SET REGISTER_ID = #{register_id}
+	    , REGIST_DT = now()
+	WHERE MBER_ID = #{mber_id}
+		AND RESVE_DT = #{resve_dt}
+		AND CARALC_STTUS_CD = 30
+	</update>
+	<update id="updateCarDispStatus">
+	  UPDATE RCEPT_HIST
+	  		SET RCEPT_SE_CD = #{rcept_se_cd}
+	  			, ROUNDTRIP_AT = #{roundtrip_at}
+	  			, MVMN_PURPS_CD = #{mvmn_purps_cd}
+	  			, WHEELCHAIR_SE_CD = #{wheelchair_se_cd}
+	  			, BRDNG_NMPR = #{brdng_nmpr}
+	  			, START_LC_CRDNT_X = #{start_lc_crdnt_x}
+	  			, START_LC_CRDNT_Y = #{start_lc_crdnt_y}
+	  			, ARVL_LC_CRDNT_X = #{arvl_lc_crdnt_x}
+	  			, ARVL_LC_CRDNT_Y = #{arvl_lc_crdnt_y}
+	  			, STRTPNT_ADRES = #{strtpnt_adres}
+	  			, ALOC_ADRES = #{aloc_adres}
+	  			, RM = #{rm}
+	  			<if test='mvmn_ty_cd != null'>
+	  			, MVMN_TY_CD = #{mvmn_ty_cd}
+	  			</if>
+	  		WHERE MBER_ID = #{mber_id}
+	  			AND CNTER_CD = #{cnter_cd}
+	  			AND RESVE_DT = #{resve_dt}
+	</update>
+	<select id="selectCaralcHist" parameterType="caralcHist" resultType="caralcHist">
+	SELECT MBER_ID
+		, CNTER_CD
+	    , RESVE_DT
+	    , CHRG_CNTER_CD
+	    , CARALC_STTUS_CD
+	    , REGISTER_ID
+	    , REGIST_DT
+	FROM CARALC_HIST
+	WHERE SN IN (SELECT MAX(SN) FROM CARALC_HIST GROUP BY RESVE_DT,MBER_ID)
+		AND MBER_ID = #{mber_id}
+		<if test='cnter_cd != null'>
+	    AND CNTER_CD = #{cnter_cd}
+	    </if>
+	    AND RESVE_DT = #{resve_dt}
+	</select>
+	<select id="getMberList" parameterType="carDispStatusCommand" resultType="mberListDomain">
+	SELECT Y.*
+	FROM (
+	    SELECT X.*, @rownum:=@rownum+1 as rnum
+		FROM (		
+		SELECT A.MBER_ID
+			, A.CNTER_CD
+			, LEFT(B.CNTER_NM, 2) AS CNTER_NAME
+		    , A.MBER_NM
+		    , IFNULL(CONVERT(AES_DECRYPT(UNHEX(A.BRTHDY), 'raison') using EUCKR), ' ') AS BRTHDY
+		    , IFNULL(CONVERT(AES_DECRYPT(UNHEX(A.MBTLNUM), 'raison') using EUCKR), ' ') AS MBTLNUM
+		    , (SELECT CD_VALUE_DE FROM CMMN_CD_VALUE_INFO WHERE CD_VALUE = C.TROBL_KND_CD  AND CD_ID = 'TROBL_KND_CD') AS TROBL_KND_CD
+		    , TROBL_GRAD
+		FROM MBER_INFO A
+			, CNTER_INFO B
+		    , HANDICAP_INFO C
+		    , (SELECT @rownum:=0) TMP
+		WHERE A.CNTER_CD = #{cnter_cd}
+			AND A.CNTER_CD = B.CNTER_CD
+		    AND A.MBER_ID = C.MBER_ID
+		    <if test='mber_name != null'>
+		    AND A.MBER_NM LIKE CONCAT('%', #{mber_name}, '%')
+		    </if>
+		    AND B.USE_YN = 'Y'
+		    )X
+		WHERE @rownum <![CDATA[<]]> #{pageM.limit}
+	) Y
+	WHERE rnum <![CDATA[>=]]> #{pageM.offset}
+	</select>
+	<select id="getMberTotal" parameterType="carDispStatusCommand" resultType="java.lang.Integer">
+	SELECT 	
+			count(A.MBER_ID) as total
+		FROM MBER_INFO A
+			, CNTER_INFO B
+		    , HANDICAP_INFO C
+		    , (SELECT @rownum:=0) TMP
+		WHERE A.CNTER_CD = #{cnter_cd}
+			AND A.CNTER_CD = B.CNTER_CD
+		    AND A.MBER_ID = C.MBER_ID
+		    <if test='mber_name != null'>
+		    AND A.MBER_NM LIKE CONCAT('%', #{mber_name}, '%')
+		    </if>
+		    AND B.USE_YN = 'Y'
+	</select>
+	<select id="getMberDetail" parameterType="detailMberDomain" resultType="detailMberDomain">
+	SELECT 
+			A.CNTER_CD
+			, C.CNTER_NM
+		    , A.MBER_SE_CD
+			, (SELECT CD_VALUE_DE FROM CMMN_CD_VALUE_INFO WHERE CD_ID = 'MBER_SE_CD' AND CD_VALUE=A.MBER_SE_CD)  AS MBER_SE_NM
+		    , A.MBER_NM
+		    , A.MBER_NT_CD
+		    , case WHEN A.MBER_NT_CD = '1' THEN '내국인' 
+					WHEN A.MBER_NT_CD = '2' THEN '외국인'
+		        END AS MBER_NT
+			, A.MBER_ID
+		    , A.SMS_RECPTN_AT
+		    , CASE WHEN A.SEXDSTN='M' THEN '남자'
+					WHEN A.SEXDSTN='F' THEN '여자' END AS SEXDSTN
+			, IFNULL(CONVERT(AES_DECRYPT(UNHEX(A.BRTHDY), 'raison') using EUCKR), '') AS BRTHDY
+			, IFNULL(CONVERT(AES_DECRYPT(UNHEX(A.MBTLNUM), 'raison') using EUCKR), '') AS MBTLNUM
+		    , A.TELNO
+		    , A.ZIP
+		    , A.ADRES
+		    , A.ADRES_DETAIL
+		    , A.EMAIL
+		    , B.TROBL_KND_CD
+		    , B.TROBL_GRAD
+		    , B.WHEELCHAIR_SE_CD
+		    , B.WHEELCHAIR_USE_PD
+		    , B.ASSTN_NEED_AT
+		    , B.ASSTN_PERSON_ENNC
+		    , B.DS_MLRD_POSBL_AT
+            , D.FILE_ATTCH_ID
+            , D.ATCHMNFL_STRE_NM
+            , D.ATCHMNFL_REAL_NM
+            , D.FLPTH
+		FROM MBER_INFO A
+			, HANDICAP_INFO B
+		LEFT JOIN  ATCHMNFL_INFO D ON D.CNTER_CD = B.CNTER_CD AND B.ATCHMNFL_NO = D.ATCHMNFL_NO
+			, CNTER_INFO C
+		WHERE A.CNTER_CD = B.CNTER_CD
+			AND A.MBER_ID = B.MBER_ID
+			AND A.CNTER_CD = C.CNTER_CD
+			AND A.CNTER_CD = #{cnter_cd}
+			AND B.MBER_ID = #{mber_id}
+			AND C.USE_YN = 'Y'
+			
+	</select>
+	<select id="findCnrsList" parameterType="carDispStatusCommand" resultType="vhcleInfoCnrsDomain">
+	SELECT 
+        CNTER_CD, CNRS_CNTER_CD, CNRS_SE_CD
+    FROM
+        VHCLE_INFO_CNRS
+    WHERE
+        CNRS_CNTER_CD = #{cnter_cd}
+	</select>
+	<update id="mberUpdate" >
+	UPDATE MBER_INFO
+		SET SMS_RECPTN_AT = #{sms_recptn_at}
+			, TELNO = #{telno}
+			, MBTLNUM = HEX(aes_encrypt(#{mbtlnum}, 'raison'))
+			, ZIP = #{zip}
+			, ADRES = #{adres}
+			, ADRES_DETAIL = #{adres_detail}
+			, EMAIL = #{email}
+		WHERE MBER_ID = #{mber_id}
+			AND CNTER_CD = #{cnter_cd}
+	</update>
+	<update id="handicapUpdate">
+	UPDATE HANDICAP_INFO
+		SET TROBL_KND_CD = #{trobl_knd_cd}
+			, TROBL_GRAD = #{trobl_grad}
+			, WHEELCHAIR_SE_CD = #{wheelchair_se_cd}
+			, WHEELCHAIR_USE_PD = #{wheelchair_use_pd}
+			<if test="asstn_person_ennc != null">
+			, ASSTN_PERSON_ENNC = #{asstn_person_ennc}
+			</if>
+			, DS_MLRD_POSBL_AT = #{ds_mlrd_posbl_at}
+			, ASSTN_NEED_AT = #{asstn_need_at}
+		WHERE MBER_ID = #{mber_id}
+			AND CNTER_CD = #{cnter_cd}
+	</update>
+	<update id="deleteMber">
+	UPDATE MBER_INFO
+		SET MBER_STTUS_CD = '00'
+		WHERE MBER_ID = #{mber_id}
+			AND CNTER_CD = #{cnter_cd}
+	</update>
+	<insert id="carInsert" parameterType="caralcHist">
+		INSERT INTO CARALC_HIST 
+	    	(MBER_ID, CNTER_CD, RESVE_DT, CHRG_CNTER_CD, CARALC_STTUS_CD, VHCLE_NO, CARALC_DT, TKCAR_DT, GFF_DT, MVMN_DSTNC, CYCHG, REGISTER_ID, REGIST_DT) 
+		SELECT 
+			MBER_ID, CNTER_CD, RESVE_DT, CHRG_CNTER_CD, '70', #{vhcle_no}, #{caralc_dt}, TKCAR_DT, GFF_DT, MVMN_DSTNC, CYCHG, #{mber_id}, now()
+		FROM CARALC_HIST
+		WHERE CNTER_CD = #{cnter_cd}
+	    	AND MBER_ID = #{mber_id}
+	    	AND RESVE_DT = DATE_FORMAT(#{resve_dt}, '%Y-%m-%d %T')
+		ORDER BY SN DESC LIMIT 1	
+    </insert>
+	<insert id="updateCaralcHist">
+		INSERT INTO CARALC_HIST 
+	    	(MBER_ID, CNTER_CD, RESVE_DT, CHRG_CNTER_CD, CARALC_STTUS_CD, VHCLE_NO, CARALC_DT, TKCAR_DT, GFF_DT, MVMN_DSTNC, CYCHG, REGISTER_ID, REGIST_DT) 
+		SELECT 
+			MBER_ID, CNTER_CD, RESVE_DT, #{chrg_cnter_cd}, #{caralc_sttus_cd}, VHCLE_NO, CARALC_DT, TKCAR_DT, GFF_DT, MVMN_DSTNC, CYCHG, #{mber_id}, now()
+		FROM CARALC_HIST
+		WHERE CNTER_CD = #{cnter_cd}
+	    	AND MBER_ID = #{mber_id}
+	    	AND RESVE_DT = DATE_FORMAT(#{resve_dt}, '%Y-%m-%d %T')
+		ORDER BY SN DESC LIMIT 1
+	</insert>
+</mapper>

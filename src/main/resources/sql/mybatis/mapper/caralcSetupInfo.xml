@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    <mapper namespace="com.neighbor.ServiceAPI.dao.mapper.caralcSetupInfo">
+    
+	    <select id="getCaralcSetupInfo" parameterType="java.lang.String" resultType="caralcSetupInfo">
+		    SELECT 
+		    	CNTER_CD AS cnter_cd
+		    	, ROUNDTRIP_PERM_AT AS roundtrip_perm_at
+		    	, CAST(ALOC_REQRE_TIME AS UNSIGNED) AS aloc_reqre_time
+		    	, VHCLE_SEARCH_RADIUS AS	vhcle_search_radius
+		    	, BEFFAT_RESVE_TIME_INTRVL AS	beffat_resve_time_intrvl
+		    	, VHCLE_MVMN_POSBL_AT AS	vhcle_mvmn_posbl_at
+		    	, POSBL_DSTNC AS	posbl_dstnc
+		    	, WDR_SCTN_OTHINST_MBER_USE_POSBL_AT AS	wdr_sctn_othinst_mber_use_posbl_at
+		    	, WHTHRC_OTHINST_MBER_USE_POSBL_AT AS whthrc_othinst_mber_use_posbl_at
+		    FROM CARALC_SETUP_INFO
+		    WHERE CNTER_CD = #{cnter_cd}
+	    </select>
+    
+    </mapper>

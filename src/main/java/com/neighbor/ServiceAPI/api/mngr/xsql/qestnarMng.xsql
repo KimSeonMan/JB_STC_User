@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="qestnarMng">
+	
+	<!-- 설문조사관리 목록 조회 -->
+	<select id="selectQestnarMngList" parameterType="hashmap" resultType="hashmap">
+		SELECT C.* FROM 
+			(
+			SELECT @rownum := @rownum + 1 AS rnum, B.* FROM
+					(
+					SELECT 
+						A.SURVEY_ID, A.SURVEY_TITLE, 
+						IFNULL(DATE_FORMAT(A.SURVEY_ST_DATE, '%Y-%m-%d'),'') AS SURVEY_ST_DATE,
+						IFNULL(DATE_FORMAT(A.SURVEY_EN_DATE, '%Y-%m-%d'),'') AS SURVEY_EN_DATE,
+						A.TARGET_USER_CD, A.MAIN_VIEW_YN, A.SURVEY_REMARK,
+						IFNULL(DATE_FORMAT(A.REG_TS, '%Y-%m-%d'),'') AS REG_TS
+					FROM SURVEY A, 
+						 ( SELECT @rownum := 0 ) R		 	
+					WHERE 1 = 1
+					<if test="SEARCH_TEXT != null">
+						AND A.SURVEY_TITLE LIKE CONCAT('%',#{SEARCH_TEXT},'%')
+					</if>
+					<if test="SEARCH_KEY != null">
+						AND A.MAIN_VIEW_YN = #{SEARCH_KEY}
+					</if>
+					<if test="ST_DT != null">
+						AND A.SURVEY_ST_DATE BETWEEN CONCAT(#{ST_DT},' 00:00:00') AND CONCAT(#{EN_DT},' 23:59:59')
+					</if>
+					ORDER BY A.REG_TS DESC
+				) B
+			) C
+		<if test="page != null">
+			WHERE C.rnum BETWEEN (1 +(#{page}-1) * 10) AND (#{page}*10)
+		</if>
+	</select>
+	
+	<!-- 설문조사관리 목록 COUNT -->
+	<select id="selectQestnarMngListCount" parameterType="hashmap" resultType="hashmap">
+		SELECT COUNT(*) AS CNT
+		FROM SURVEY A
+		WHERE 1 = 1
+		<if test="SEARCH_TEXT != null">
+			AND A.SURVEY_TITLE LIKE CONCAT('%',#{SEARCH_TEXT},'%')
+		</if>
+		<if test="SEARCH_KEY != null">
+			AND A.MAIN_VIEW_YN = #{SEARCH_KEY}
+		</if>
+		<if test="ST_DT != null">
+			AND A.SURVEY_ST_DATE BETWEEN CONCAT(#{ST_DT},' 00:00:00') AND CONCAT(#{EN_DT},' 23:59:59')
+		</if>
+	</select>
+	
+	<!-- 설문조사관리 등록 SURVEY TABLE -->
+	<insert id="surveyInsert" parameterType="hashmap">
+		INSERT INTO SURVEY 
+			(
+				SURVEY_ID, SURVEY_TITLE, SURVEY_ST_DATE, SURVEY_EN_DATE, TARGET_USER_CD, MAIN_VIEW_YN, 
+				SURVEY_REMARK, REG_TS
+		 	)
+		VALUES 
+			(
+				#{SURVEY_ID}, #{SURVEY_TITLE}, #{SURVEY_ST_DATE}, #{SURVEY_EN_DATE}, #{TARGET_USER_CD}, #{MAIN_VIEW_YN}, 
+				#{SURVEY_REMARK}, now()
+        	)	
+	</insert>
+	
+	<!-- 설문조사관리 등록 SURVEY_INFO TABLE -->
+	<insert id="surveyInfoInsert" parameterType="hashmap">
+		INSERT INTO SURVEY_INFO 
+			(
+				SURVEY_ID, SURVEY_SEQ, SURVEY_TYPE_CD, SURVEY_CHOICE_CD, SURVEY_GBN_CD, SURVEY_CTNT
+		 	)
+		VALUES 
+			(
+				#{SURVEY_ID}, #{SURVEY_SEQ}, #{survey_type_cd}, #{survey_choice_cd}, #{survey_gbn_cd}, #{survey_ctnt}
+        	)	
+	</insert>
+	
+	<!-- 설문조사관리 삭제 SURVEY -->
+	<delete id="surveyDelete" parameterType="hashmap">
+		DELETE FROM SURVEY
+		WHERE SURVEY_ID IN 
+    	<foreach item="item" collection="array" open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</delete>
+	
+	<!-- 설문조사관리 삭제 SURVEY_INFO -->
+	<delete id="surveyInfoDelete" parameterType="hashmap">
+		DELETE FROM SURVEY_INFO
+		WHERE SURVEY_ID IN 
+    	<foreach item="item" collection="array" open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</delete>
+	
+	<!-- 설문조사관리 상세 -->
+	<select id="selectQestnarMngDetail" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+			B.SURVEY_ID, B.SURVEY_TITLE, 
+			IFNULL(DATE_FORMAT(B.SURVEY_ST_DATE, '%Y-%m-%d'),'') AS SURVEY_ST_DATE,
+			IFNULL(DATE_FORMAT(B.SURVEY_EN_DATE, '%Y-%m-%d'),'') AS SURVEY_EN_DATE,
+			B.TARGET_USER_CD, B.MAIN_VIEW_YN, B.SURVEY_REMARK,
+			A.SURVEY_SEQ, A.SURVEY_TYPE_CD, A.SURVEY_CHOICE_CD, A.SURVEY_GBN_CD, A.SURVEY_CTNT
+		FROM SURVEY_INFO A, SURVEY B
+		WHERE A.SURVEY_ID = B.SURVEY_ID
+			AND B.SURVEY_ID = #{SURVEY_ID}
+		ORDER BY A.SURVEY_SEQ
+	</select>
+	
+	<!-- 설문조사관리 수정 -->
+	<update id="surveyUpdate" parameterType="hashmap">
+		UPDATE SURVEY SET 
+			SURVEY_TITLE = #{SURVEY_TITLE}, 
+			SURVEY_ST_DATE = #{SURVEY_ST_DATE}, 
+			SURVEY_EN_DATE = #{SURVEY_EN_DATE}, 
+			TARGET_USER_CD = #{TARGET_USER_CD}, 
+			MAIN_VIEW_YN = #{MAIN_VIEW_YN}, 
+			SURVEY_REMARK = #{SURVEY_REMARK}
+		WHERE SURVEY_ID = #{SURVEY_ID}
+	</update>
+	
+	<!-- 설문조사결과 -->
+	<select id="selectQestnarMngResult" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+			B.SURVEY_SEQ,
+			(SELECT COUNT(DISTINCT(USER_ID)) FROM SURVEY_HIST WHERE SURVEY_ID = B.SURVEY_ID) AS REPLAY_CNT,
+			COUNT(B.SURVEY_SEQ) AS SEQ_CNT
+		FROM SURVEY_INFO A
+			LEFT OUTER JOIN SURVEY_HIST B ON A.SURVEY_ID = B.SURVEY_ID AND A.SURVEY_SEQ = B.SURVEY_SEQ
+		WHERE B.SURVEY_ID = #{SURVEY_ID}
+		GROUP BY A.SURVEY_SEQ
+		ORDER BY A.SURVEY_SEQ
+	</select>
+	
+</mapper>

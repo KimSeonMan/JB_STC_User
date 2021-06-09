@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration status="DEBUG">
+	<appenders>
+		<!-- 콘솔 로그 -->
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout pattern="[WEB][%d{yyMMdd HH:mm:ss,SSS}] [%5p] [%t] (%F:%L) - %m%n"/>
+		</Console>
+
+		<!-- 매일 남기는 로그 -->
+<!--		<RollingFile name="dailyrolling" fileName="/share/logs/JB_STC_User/JB_STC_User.log" append="true" filePattern="/share/logs/JB_STC_User/JB_STC_User.log.%d{yyyy-MM-dd}.%i">-->
+		<RollingFile name="dailyrolling" fileName="D:/projects/JB_STC/logs/JB_STC_User/JB_STC_User.log" append="true" filePattern="D:/projects/JB_STC/logs/JB_STC_User/JB_STC_User.log.%d{yyyy-MM-dd}.%i">
+	   		<PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss,SSS}] [%5p] [%t] (%F:%L) - %m%n"/>
+	   		<Policies>
+				<!-- interval(default 1)이므로 1초 간격으로 rolling 수행 --> 
+			  	<TimeBasedTriggeringPolicy />
+				<SizeBasedTriggeringPolicy size="100MB"/>
+        		<!--용량이 초과되면 아래 DefaultRolloverStrategy정책만큼 넘버링 한다.-->
+			</Policies>
+			<DefaultRolloverStrategy max="1000"/>
+      		<!--0부터 1000개 까지만 만들고, 1000개를 초과하면 파일이 생성되지 않는다.-->
+	  	</RollingFile>
+	  	
+		<!-- 매일 남기는 로그 _exception-->
+<!--		<RollingFile name="exception" fileName="/share/logs/Exception/JB_STC_User_Exception.log" append="true" filePattern="/share/logs/Exception/JB_STC_User_Exception.log.%d{yyyy-MM-dd}.%i">-->
+		<RollingFile name="exception" fileName="D:/projects/JB_STC/logs/Exception/JB_STC_User_Exception.log" append="true" filePattern="D:/projects/JB_STC/logs/Exception/JB_STC_User_Exception.log.%d{yyyy-MM-dd}.%i">
+	   		<PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss,SSS}] [%5p] [%t] (%F:%L) - %m%n"/>
+	   		<Policies>
+				<!-- interval(default 1)이므로 1초 간격으로 rolling 수행 -->
+				<TimeBasedTriggeringPolicy /> 
+				<SizeBasedTriggeringPolicy size="100MB"/>
+        		<!--용량이 초과되면 아래 DefaultRolloverStrategy정책만큼 넘버링 한다.-->
+			</Policies>
+			<DefaultRolloverStrategy max="1000"/>
+      		<!--0부터 1000개 까지만 만들고, 1000개를 초과하면 파일이 생성되지 않는다.-->
+	  	</RollingFile>
+	</appenders>
+	
+	<loggers>
+ 		<root level="INFO" additivity="false">
+			<appender-ref ref="Console" />
+			<appender-ref level="info" ref="dailyrolling" />
+			<appender-ref level="error" ref="exception" />
+		</root>
+	</loggers>
+</configuration>

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="statHistroy">
+	
+	<!-- 정보컨텐츠관리 목록 조회 -->
+	<select id="selectStatHistoryList" parameterType="hashmap" resultType="hashmap">
+		SELECT C.* FROM 
+			(
+			SELECT @rownum := @rownum + 1 AS rnum, Z.* FROM                
+			(         
+				SELECT
+					A.CNTER_CD 
+					, C.CNTER_NM
+			        , ifnull(( 
+						SELECT 
+							K.CNTER_CD
+						FROM CNTER_INFO AS K 
+						LEFT JOIN DRVER_INFO AS L ON K.CNTER_CD = L.CNTER_CD
+						WHERE 1=1
+						AND L.VHCLE_NO = A.VHCLE_NO
+					  ), '-') SOSOK_CNTER_CD
+					, ifnull(( 
+						SELECT 
+							K.CNTER_NM
+						FROM CNTER_INFO AS K 
+						LEFT JOIN DRVER_INFO AS L ON K.CNTER_CD = L.CNTER_CD
+						WHERE 1=1
+						AND L.VHCLE_NO = A.VHCLE_NO
+					  ), '-') SOSOK_CNTER_NM
+					, A.VHCLE_NO
+					<if test='searchDATE_OPTION == "D"'>
+						, date_format(A.RESVE_DT, "%Y-%m-%d") AS RESVE_DT
+					</if>
+					<if test='searchDATE_OPTION == "M"'>
+						, date_format(A.RESVE_DT, "%Y-%m") AS RESVE_DT
+					</if>
+					, ifnull(B.STRTPNT_ADRES, '-') as STRTPNT_ADRES
+					, ifnull(B.ALOC_ADRES, '-') as ALOC_ADRES
+					, ifnull(A.MVMN_DSTNC, '-') as MVMN_DSTNC
+					, ifnull(A.CYCHG, '-') as CYCHG
+				FROM CARALC_HIST as A
+				LEFT JOIN RCEPT_HIST AS B ON A.MBER_ID = B.MBER_ID AND A.CNTER_CD = B.CNTER_CD AND A.RESVE_DT = B.RESVE_DT
+				LEFT JOIN CNTER_INFO AS C ON A.CNTER_CD = C.CNTER_CD
+			    ,( SELECT @rownum := 0 ) R
+			    WHERE 1=1
+	    		<if test='cnterState == "WDR"'>
+					AND C.UPPER_CNTER_CD = #{CNTER_CD}
+				</if>
+				<if test='cnterState == "ARE"'>
+					AND C.CNTER_NM = #{CNTER_CD}
+				</if>
+				<if test="searchCNTER_NM != NULL">
+					AND C.CNTER_NM LIKE CONCAT('%', #{searchCNTER_NM},'%')
+				</if>
+				<if test="searchStartDate != NULL">
+					<if test="searchEndDate != NULL">
+						AND A.RESVE_DT BETWEEN #{searchStartDate} AND #{searchEndDate}
+					</if>
+				</if>
+			    ) Z
+			) C
+		<if test="page != null">
+			WHERE C.rnum BETWEEN (1 +(#{page}-1) * 10) AND (#{page}*10)	
+		</if>
+	</select>
+	<!-- 정보컨텐츠관리 목록 합계 -->
+	<select id="selectStatHistoryListCount" parameterType="hashmap" resultType="hashmap">
+		select 
+			count(*) as CNT
+		FROM CARALC_HIST as A
+		LEFT JOIN RCEPT_HIST AS B ON A.MBER_ID = B.MBER_ID AND A.CNTER_CD = B.CNTER_CD AND A.RESVE_DT = B.RESVE_DT
+		LEFT JOIN CNTER_INFO AS C ON A.CNTER_CD = C.CNTER_CD
+	    ,( SELECT @rownum := 0 ) R
+	    WHERE 1=1
+		<if test='cnterState == "WDR"'>
+			AND C.UPPER_CNTER_CD = #{CNTER_CD}
+		</if>
+		<if test='cnterState == "ARE"'>
+			AND C.CNTER_NM = #{CNTER_CD}
+		</if>
+		<if test="searchCNTER_NM != NULL">
+			AND C.CNTER_NM LIKE CONCAT('%', #{searchCNTER_NM},'%')
+		</if>
+		<if test="searchStartDate != NULL">
+			<if test="searchEndDate != NULL">
+				AND A.RESVE_DT BETWEEN #{searchStartDate} AND #{searchEndDate}
+			</if>
+		</if>
+	</select>
+	
+</mapper>

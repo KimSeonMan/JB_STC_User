@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neighbor.ServiceAPI.dao.mapper.cmmnCdInfo">
+	<select id="getTotal" parameterType="cmmnCdInfo" resultType="java.lang.Integer">
+		SELECT 
+			COUNT(CD_ID) AS total
+		FROM CMMN_CD_INFO
+		WHERE 1=1
+		<if test = "cd_id != null">
+			AND CD_ID LIKE CONCAT('%', #{cd_id}, '%')
+		</if>
+		<if test = "cd_de != null">
+			AND CD_DE LIKE CONCAT('%', #{cd_de}, '%')
+		</if>
+	</select>
+
+	<select id="selectCmmnCdInfo" parameterType="cmmnCdInfo" resultType="cmmnCdInfo">
+		SELECT Y.*
+		FROM (	
+			SELECT X.*, @rownum:=@rownum+1 as rnum
+			FROM (
+				SELECT
+					CD_ID
+					, CD_DE
+				FROM CMMN_CD_INFO
+					, (SELECT @rownum:=0)TMP
+				WHERE 1=1
+				<if test = "cd_id != null">
+					AND CD_ID LIKE CONCAT('%', #{cd_id}, '%')
+				</if>
+				<if test = "cd_de != null">
+					AND CD_DE LIKE CONCAT('%', #{cd_de}, '%')
+				</if>
+			) X
+			WHERE @rownum <![CDATA[<]]> #{page.limit}
+		) Y
+		WHERE rnum <![CDATA[>=]]> #{page.offset}
+	</select>
+
+</mapper>
+

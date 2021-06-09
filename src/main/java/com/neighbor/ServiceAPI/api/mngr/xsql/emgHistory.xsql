@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="emgHistroy">
+	
+	<!-- 정보컨텐츠관리 목록 조회 -->
+	<select id="selectEmgHistoryList" parameterType="hashmap" resultType="hashmap">
+		SELECT C.* FROM 
+			(
+			SELECT @rownum := @rownum + 1 AS rnum, Z.* FROM                
+				(         
+					select 
+						C.CNTER_CD
+				        , C.CNTER_NM
+						, B.MBER_SE_CD
+				        , (SELECT CD_VALUE_DE AS CD_VAL_DESC 
+						   FROM CMMN_CD_VALUE_INFO 
+						   WHERE CD_ID = 'MBER_SE_CD' 
+							AND CD_VALUE = B.MBER_SE_CD) AS MBER_SE_VALUE
+						 , B.MBER_ID
+				         , B.MBER_NM
+				         , A.ADRES
+				         , A.COLCT_DT
+				         , (CASE 
+								WHEN A.CNFIRM_AT = 'Y' THEN A.CNFIRM_DT
+				                WHEN A.CNFIRM_AT = 'N' THEN '미확인'
+							ELSE '' END ) AS CNFIRM_VALUE
+						 , ifnull(A.CNFRMR_ID, '미확인') AS CNFRMR_ID
+					from EMRGNCY_CALL_HIST as A
+					left join MBER_INFO AS B ON A.CNTER_CD = B.CNTER_CD AND A.MBER_ID = B.MBER_ID
+					LEFT JOIN CNTER_INFO AS C ON A.CNTER_CD = C.CNTER_CD
+					,( SELECT @rownum := 0 ) R
+					WHERE 1=1
+					<if test='cnterState == "WDR"'>
+						AND C.UPPER_CNTER_CD = #{CNTER_CD}
+					</if>
+					<if test='cnterState == "ARE"'>
+						AND C.CNTER_CD = #{CNTER_CD}
+					</if>
+					<if test="searchCNTER_CD != NULL">
+						AND C.CNTER_CD LIKE CONCAT('%', #{searchCNTER_CD},'%')
+					</if>
+					<if test="searchNm != NULL">
+						AND B.MBER_NM LIKE CONCAT('%', #{searchNm},'%')
+					</if>
+					<if test="searchStartDate != NULL">
+						<if test="searchEndDate != NULL">
+							AND A.COLCT_DT BETWEEN #{searchStartDate} AND #{searchEndDate}
+						</if>
+					</if>
+					ORDER BY A.COLCT_DT ASC
+				) Z
+			) C
+		<if test="page != null">
+			WHERE C.rnum BETWEEN (1 +(#{page}-1) * 10) AND (#{page}*10)	
+		</if>
+	</select>
+	<!-- 정보컨텐츠관리 목록 합계 -->
+	<select id="selectEmgHistoryListCount" parameterType="hashmap" resultType="hashmap">
+		select 
+			count(*) as CNT
+		from EMRGNCY_CALL_HIST as A
+		left join MBER_INFO AS B ON A.CNTER_CD = B.CNTER_CD AND A.MBER_ID = B.MBER_ID
+		LEFT JOIN CNTER_INFO AS C ON A.CNTER_CD = C.CNTER_CD
+		WHERE 1=1
+		<if test='cnterState == "WDR"'>
+			AND C.UPPER_CNTER_CD = #{CNTER_CD}
+		</if>
+		<if test='cnterState == "ARE"'>
+			AND C.CNTER_CD = #{CNTER_CD}
+		</if>
+		<if test="searchCNTER_CD != NULL">
+			AND C.CNTER_CD LIKE CONCAT('%', #{searchCNTER_CD},'%')
+		</if>
+		<if test="searchNm != NULL">
+			AND B.MBER_NM LIKE CONCAT('%', #{searchNm},'%')
+		</if>
+		<if test="searchStartDate != NULL">
+			<if test="searchEndDate != NULL">
+				AND A.COLCT_DT BETWEEN #{searchStartDate} AND #{searchEndDate}
+			</if>
+		</if>
+	</select>
+	
+</mapper>

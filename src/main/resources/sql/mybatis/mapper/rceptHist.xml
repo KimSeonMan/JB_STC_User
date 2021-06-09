@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neighbor.ServiceAPI.dao.mapper.rceptHist">
+	<resultMap id="rceptHist" type="rceptHist">
+		<result property="mber_id" column="MBER_ID"/>
+		<result property="cnter_cd" column="CNTER_CD"/>
+		<result property="rcept_se_cd" column="RCEPT_SE_CD"/>
+		<result property="online_at" column="ONLINE_AT"/>
+		<result property="pbtrnsp_trnsit_at" column="PBTRNSP_TRNSIT_AT"/>
+		<result property="roundtrip_at" column="ROUNDTRIP_AT"/>
+		<result property="mvmn_purps_cd" column="MVMN_PURPS_CD"/>
+		<result property="wheelchair_se_cd" column="WHEELCHAIR_SE_CD"/> 
+		<result property="mvmn_ty_cd" column="MVMN_TY_CD"/>
+		<result property="brdng_nmpr" column="BRDNG_NMPR"/>
+		<result property="start_lc_crdnt_x" column="START_LC_CRDNT_X"/>
+		<result property="start_lc_crdnt_y" column="START_LC_CRDNT_Y"/>
+		<result property="arvl_lc_crdnt_x" column="ARVL_LC_CRDNT_X"/>
+		<result property="arvl_lc_crdnt_y" column="ARVL_LC_CRDNT_Y"/>
+		<result property="strtpnt_adres" column="STRTPNT_ADRES"/>
+		<result property="aloc_adres" column="ALOC_ADRES"/>
+		<result property="expect_reqre_time" column="EXPECT_REQRE_TIME"/>
+		<result property="expect_mvmn_dstnc" column="EXPECT_MVMN_DSTNC"/>
+		<result property="expect_cychg" column="EXPECT_CYCHG"/>
+		<result property="rm" column="RM"/>
+		<result property="total_mvmn_dstnc" column="TOTAL_MVMN_DSTNC"/>
+		<result property="total_cychg" column="TOTAL_CYCHG"/>
+	</resultMap>
+	<select id = "getRecptHistList" parameterType="HashMap" resultType="HashMap">
+		SELECT 
+		    CAST(@rownum AS CHAR) as total_count, Y.*
+		FROM
+		    (SELECT 
+		        X.*, @rownum:=@rownum+1 AS RN
+		    FROM
+		        (
+		        SELECT 
+					REPLACE(IFNULL(DATE_FORMAT(A.RESVE_DT, '%Y%m%d%T'),''),':','') as resve_dt
+				    , A.MBER_ID AS mber_id
+				    , A.CNTER_CD AS cnter_cd
+				    , A.RCEPT_SE_CD AS rcept_se_cd
+				    , A.ONLINE_AT AS online_at
+				    , A.PBTRNSP_TRNSIT_AT AS pbtrnsp_trnsit_at
+				    , A.ROUNDTRIP_AT AS roundtrip_at
+				    , A.MVMN_PURPS_CD AS mvmn_purps_cd
+				    , A.WHEELCHAIR_SE_CD AS wheelchair_se_cd
+				    , A.MVMN_TY_CD AS mvmn_ty_cd
+				    , CAST(A.BRDNG_NMPR AS CHAR) AS brdng_nmpr
+				    , CAST(A.START_LC_CRDNT_X AS CHAR) AS start_lc_crdnt_x
+				    , CAST(A.START_LC_CRDNT_Y AS CHAR) AS start_lc_crdnt_y
+				    , CAST(A.ARVL_LC_CRDNT_X AS CHAR) AS arvl_lc_crdnt_x
+				    , CAST(A.ARVL_LC_CRDNT_Y AS CHAR) AS arvl_lc_crdnt_y
+				    , A.STRTPNT_ADRES AS strtpnt_adres
+				    , A.ALOC_ADRES AS aloc_adres
+				    , A.EXPECT_REQRE_TIME AS expect_reqre_time
+				    , A.EXPECT_MVMN_DSTNC AS expect_mvmn_dstnc
+				    , A.EXPECT_CYCHG AS expect_cychg
+				    , A.RM AS rm
+				    , B.REGIST_DT AS regist_dt
+				    , B.CARALC_STTUS_CD AS caralc_sttus_cd
+				    , IF((B.CARALC_STTUS_CD > 60), B.VHCLE_NO,'') AS vhcle_no
+				    , IF((B.CARALC_STTUS_CD > 60), 
+					 		(SELECT CAST(AES_DECRYPT(UNHEX(MBTLNUM), 'raison') AS CHAR) 
+							FROM MBER_INFO 
+							WHERE MBER_ID = (SELECT MBER_ID FROM DRVER_INFO WHERE VHCLE_NO = B.VHCLE_NO))
+							,'') AS mbtlnum
+				FROM RCEPT_HIST A 
+					, CARALC_HIST B 
+					, (SELECT @rownum:=0)TMP
+				WHERE A.MBER_ID = #{mber_id}
+					AND A.CNTER_CD = #{cnter_cd}   
+					AND A.RESVE_DT <![CDATA[>]]> DATE(now())
+					AND A.RESVE_DT = B.RESVE_DT 
+					AND A.MBER_ID = B.MBER_ID 
+					AND A.CNTER_CD = B.CNTER_CD 
+					AND B.CARALC_STTUS_CD NOT IN ('20','40','110')
+					AND B.SN IN 
+						(SELECT MAX(SN) FROM CARALC_HIST GROUP BY RESVE_DT)	
+				ORDER BY A.RESVE_DT	
+		        ) X
+		    ) Y
+		WHERE RN BETWEEN #{start_idx} AND #{end_idx} 
+	</select>
+	
+	<select id = "getRecptHist" parameterType="rceptHist" resultType="rceptHist">
+		SELECT 
+			Y.* 
+		FROM
+			(
+				SELECT 
+		        	X.*, @rownum:=@rownum+1 AS RN
+		     	FROM
+		        	(
+				        SELECT 
+							B.TOTAL_COUNT
+							, B.TOTAL_MVMN_DSTNC
+			             	, B.TOTAL_CYCHG
+			             	, REPLACE(IFNULL(DATE_FORMAT(A.RESVE_DT, '%Y%m%d%T'),''),':','') AS resve_dt
+						    , A.MBER_ID AS mber_id
+						    , A.CNTER_CD AS cnter_cd
+						    , A.RCEPT_SE_CD AS rcept_se_cd
+						    , A.ONLINE_AT AS online_at
+						    , A.PBTRNSP_TRNSIT_AT AS pbtrnsp_trnsit_at
+						    , A.ROUNDTRIP_AT AS roundtrip_at
+						    , A.MVMN_PURPS_CD AS mvmn_purps_cd
+						    , A.WHEELCHAIR_SE_CD AS wheelchair_se_cd
+						    , A.MVMN_TY_CD AS mvmn_ty_cd
+						    , A.BRDNG_NMPR AS brdng_nmpr
+						    , A.START_LC_CRDNT_X AS start_lc_crdnt_x
+						    , A.START_LC_CRDNT_Y AS start_lc_crdnt_Y
+						    , A.ARVL_LC_CRDNT_X AS arvl_lc_crdnt_x
+						    , A.ARVL_LC_CRDNT_Y AS arvl_lc_crdnt_y
+						    , A.STRTPNT_ADRES AS strtpnt_adres
+						    , A.ALOC_ADRES AS aloc_adres
+						    , A.EXPECT_REQRE_TIME AS expect_reqre_time
+						    , A.EXPECT_MVMN_DSTNC AS expect_mvmn_dstnc
+						    , A.EXPECT_CYCHG AS expect_cychg
+						    , A.RM AS rm
+						FROM RCEPT_HIST A, 
+							(SELECT COUNT(DISTINCT RESVE_DT) AS TOTAL_COUNT, IFNULL(SUM(MVMN_DSTNC),0) AS TOTAL_MVMN_DSTNC, IFNULL(SUM(CYCHG),0) AS TOTAL_CYCHG
+							FROM CARALC_HIST
+		               		WHERE MBER_ID = #{mber_id}
+								AND CNTER_CD = #{cnter_cd}
+								AND DATE_FORMAT(RESVE_DT, '%Y%m') = #{year_month}  
+							) B, 
+							(SELECT @rownum:=0)TMP	
+						WHERE A.MBER_ID = #{mber_id}
+							AND A.CNTER_CD = #{cnter_cd}
+							AND DATE_FORMAT(A.RESVE_DT, '%Y%m') = #{year_month} 
+						ORDER BY A.RESVE_DT DESC	
+			        ) X
+			) Y
+		WHERE RN BETWEEN #{start_idx} AND #{end_idx}
+	</select>
+	
+	<insert id="insertCarInstant">
+	INSERT INTO RCEPT_HIST
+	(RESVE_DT, MBER_ID, CNTER_CD, RCEPT_SE_CD, ONLINE_AT, PBTRNSP_TRNSIT_AT, ROUNDTRIP_AT, 
+		MVMN_PURPS_CD, WHEELCHAIR_SE_CD, MVMN_TY_CD, BRDNG_NMPR, START_LC_CRDNT_X, START_LC_CRDNT_Y,
+		ARVL_LC_CRDNT_X, ARVL_LC_CRDNT_Y, STRTPNT_ADRES, ALOC_ADRES, EXPECT_REQRE_TIME, EXPECT_MVMN_DSTNC, EXPECT_CYCHG
+		<if test="rm != null">
+		, RM
+		</if>
+		, SN
+		) values (
+			NOW(), #{mber_id}, #{cnter_cd}, #{rcept_se_cd}, #{online_at}, #{pbtrnsp_trnsit_at},
+			#{roundtrip_at}, #{mvmn_purps_cd}, #{wheelchair_se_cd}, #{mvmn_ty_cd}, #{brdng_nmpr},
+			#{start_lc_crdnt_x}, #{start_lc_crdnt_y}, #{arvl_lc_crdnt_x}, #{arvl_lc_crdnt_y}, #{strtpnt_adres}, #{aloc_adres}
+			, #{expect_reqre_time}, #{expect_mvmn_dstnc}, #{expect_cychg} 
+			<if test="rm != null">
+			, #{rm}
+			</if> 
+			, '0'
+		)
+	</insert>
+	
+	<insert id="insertCarAdvance">
+	INSERT INTO RCEPT_HIST 
+	(RESVE_DT, MBER_ID, CNTER_CD, RCEPT_SE_CD, ONLINE_AT, PBTRNSP_TRNSIT_AT, ROUNDTRIP_AT, 
+		MVMN_PURPS_CD, WHEELCHAIR_SE_CD, MVMN_TY_CD, BRDNG_NMPR, START_LC_CRDNT_X, START_LC_CRDNT_Y,
+		ARVL_LC_CRDNT_X, ARVL_LC_CRDNT_Y, STRTPNT_ADRES, ALOC_ADRES
+		, EXPECT_REQRE_TIME, EXPECT_MVMN_DSTNC, EXPECT_CYCHG
+		<if test="rm != null">
+		, RM
+		</if>
+		, SN
+		) values (
+			DATE_FORMAT(#{resve_dt}, '%Y-%m-%d %T'), #{mber_id}, #{cnter_cd}, #{rcept_se_cd}, #{online_at}, #{pbtrnsp_trnsit_at},
+			#{roundtrip_at}, #{mvmn_purps_cd}, #{wheelchair_se_cd}, #{mvmn_ty_cd}, #{brdng_nmpr},
+			#{start_lc_crdnt_x}, #{start_lc_crdnt_y}, #{arvl_lc_crdnt_x}, #{arvl_lc_crdnt_y}, #{strtpnt_adres}, #{aloc_adres}
+			, #{expect_reqre_time}, #{expect_mvmn_dstnc}, #{expect_cychg} 
+			<if test="rm != null">
+			, #{rm}
+			</if> 
+			<if test='pbtrnsp_trnsit_at == "Y"'>
+			, (	
+			SELECT		CASE
+			 			WHEN	resve_flag='0'
+			 			THEN	CAST('1' AS UNSIGNED)
+			 			WHEN	resve_flag='1'
+					 	THEN		CASE	
+					 				WHEN	MAX_LONG_SN='0'
+					 				THEN	CAST('1' AS UNSIGNED)
+						 			ELSE		CASE
+								 				WHEN	same_resve_count='1'
+								 				THEN	MAX_LONG_SN
+								 				WHEN	same_resve_count='2'
+								 				THEN	MAX_LONG_SN+1
+								 				END
+						 			END 
+			 			END	AS SN
+			FROM			(
+								SELECT		EXISTS(
+												SELECT		*
+												FROM		RCEPT_HIST
+												WHERE		LEFT(REPLACE(IFNULL(DATE_FORMAT(RESVE_DT, '%Y%m%d%T'),''),':',''),8)=LEFT(#{resve_dt},8) )AS resve_flag
+							, (
+								SELECT		MAX(SN)
+								FROM		RCEPT_HIST
+								WHERE		LEFT(REPLACE(IFNULL(DATE_FORMAT(RESVE_DT, '%Y%m%d%T'),''),':',''),8)=LEFT(#{resve_dt},8)
+								AND			PBTRNSP_TRNSIT_AT="Y"
+								GROUP BY	LEFT(REPLACE(IFNULL(DATE_FORMAT(RESVE_DT, '%Y%m%d%T'),''),':',''),8) )AS MAX_LONG_SN
+							,(
+								SELECT		COUNT(*)
+								FROM(
+											SELECT		MAX(SN) MAX_LONG_SN
+											FROM		RCEPT_HIST
+											WHERE		LEFT(REPLACE(IFNULL(DATE_FORMAT(RESVE_DT, '%Y%m%d%T'),''),':',''),8)=LEFT(#{resve_dt},8)
+											AND			PBTRNSP_TRNSIT_AT="Y"
+											GROUP BY	LEFT(REPLACE(IFNULL(DATE_FORMAT(RESVE_DT, '%Y%m%d%T'),''),':',''),8)
+								)A, RCEPT_HIST B
+								WHERE		LEFT(REPLACE(IFNULL(DATE_FORMAT(B.RESVE_DT, '%Y%m%d%T'),''),':',''),8)=LEFT(#{resve_dt},8)
+					 			AND			B.SN=MAX_LONG_SN )AS same_resve_count
+							 ) A
+				)
+		</if>
+		<if test='pbtrnsp_trnsit_at != "Y"'>
+			,'0'
+		</if>
+		)
+	</insert>
+	
+	<select id="getBookPoint" parameterType="HashMap" resultType="rceptHist">
+	SELECT @ROWNUM:=@ROWNUM+1 AS rnum,  X.*
+	FROM 
+	(
+		SELECT START_LC_CRDNT_X 
+			, START_LC_CRDNT_Y
+			, ARVL_LC_CRDNT_X 
+			, ARVL_LC_CRDNT_Y
+			, STRTPNT_ADRES
+			, ALOC_ADRES
+		FROM RCEPT_HIST
+			, (SELECT @rownum:=0)TMP
+		WHERE CNTER_CD = #{cnter_cd}
+			AND MBER_ID = #{mber_id}
+            AND RESVE_DT <![CDATA[<]]> date_format(now(), '%Y%m%d')
+		GROUP BY START_LC_CRDNT_X, START_LC_CRDNT_Y
+			, ARVL_LC_CRDNT_X, ARVL_LC_CRDNT_Y
+			, STRTPNT_ADRES, ALOC_ADRES
+	) X
+	WHERE @ROWNUM <![CDATA[<]]> 11
+	</select>
+</mapper>

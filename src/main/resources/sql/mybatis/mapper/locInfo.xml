@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neighbor.ServiceAPI.dao.mapper.locInfoDomain">
+	<select id="getTotal" parameterType="locInfoCommand" resultType="java.lang.Integer">
+	SELECT 
+		COUNT(DRVER.MBER_ID) as TOTAL
+    FROM DRVER_INFO DRVER
+		LEFT JOIN (SELECT CARALC.VHCLE_NO, RCEPT.ALOC_ADRES, CARALC.RESVE_DT
+					FROM (
+						SELECT VHCLE_NO, CNTER_CD, MAX(RESVE_DT) AS RESVE_DT
+						FROM CARALC_HIST
+						WHERE VHCLE_NO IS NOT NULL
+						<if test="cnter_cd != null">
+							AND CNTER_CD = #{cnter_cd}
+						</if>
+						GROUP BY VHCLE_NO, CNTER_CD
+					) CARALC
+					, RCEPT_HIST RCEPT
+					WHERE CARALC.CNTER_CD = RCEPT.CNTER_CD
+						AND CARALC.RESVE_DT = RCEPT.RESVE_DT
+				) RCEPT
+			ON DRVER.VHCLE_NO = RCEPT.VHCLE_NO
+		, CNTER_INFO CNTER
+        , MBER_INFO MBER 
+        , (SELECT DRVER.MBER_ID, DRVER.WHEELCHAIR_FIXING_STTUS_CD, DRVER.LC_CRDNT_X AS LON, DRVER.lC_CRDNT_Y AS LAT
+			FROM (
+					SELECT MBER_ID, MAX(COLCT_DT) AS COLCT
+					FROM DRVER_LC_HIST 
+					WHERE 1=1
+					<if test="cnter_cd != null">
+						AND CNTER_CD = #{cnter_cd}
+					</if>
+					GROUP BY MBER_ID
+				  ) DRVER_LC
+				  , DRVER_LC_HIST DRVER
+			WHERE DRVER.MBER_ID = DRVER_LC.MBER_ID
+				AND DRVER_LC.COLCT = DRVER.COLCT_DT
+			)DRVER_LC
+	WHERE DRVER.CNTER_CD = CNTER.CNTER_CD
+		AND DRVER.MBER_ID = MBER.MBER_ID
+        AND DRVER.MBER_ID = DRVER_LC.MBER_ID
+        <if test="cnter_cd != null">
+        AND DRVER.CNTER_CD = #{cnter_cd}
+        </if>
+        <if test="drverSttusCd != 'ALL'">
+        AND DRVER.DRVER_STTUS_CD = #{drverSttusCd}
+        </if>
+        <if test="drver_name!=null">
+        AND MBER.MBER_NM LIKE CONCAT('%', #{drver_name}, '%')
+        </if>
+	ORDER BY FIELD (DRVER.DRVER_STTUS_CD ,'30', '00', '10', '20', '40'), RCEPT.RESVE_DT DESC	
+	</select>
+	<select id="selectDrverList" parameterType="locInfoCommand" resultType="locInfoDomain">
+	SELECT Y.*
+	FROM (	
+		SELECT X.*, @rownum:=@rownum+1 as rnum
+		FROM (
+			SELECT 
+				LEFT(CNTER.CNTER_NM, 2) as cnter_nm
+		        , MBER.MBER_NM
+		        , RCEPT.ALOC_ADRES
+		        , DRVER.VHCLE_NO
+		        , (SELECT CD_VALUE_DE FROM CMMN_CD_VALUE_INFO WHERE CD_VALUE = DRVER.DRVER_STTUS_CD AND CD_ID = 'DRVER_STTUS_CD') AS DRVER_STTUS_NM
+				, DRVER.MBER_ID
+		        , DRVER.CNTER_CD
+		        , DRVER.DRVER_STTUS_CD
+		        , DRVER_LC.WHEELCHAIR_FIXING_STTUS_CD
+		        , DRVER_LC.LON
+                , DRVER_LC.LAT
+		    FROM DRVER_INFO DRVER
+				LEFT JOIN (SELECT CARALC.VHCLE_NO, RCEPT.ALOC_ADRES, CARALC.RESVE_DT
+							FROM (
+								SELECT VHCLE_NO, CNTER_CD, MAX(RESVE_DT) AS RESVE_DT
+								FROM CARALC_HIST
+								WHERE VHCLE_NO IS NOT NULL
+									<if test="cnter_cd != null">
+										AND CNTER_CD = #{cnter_cd}
+									</if>
+								GROUP BY VHCLE_NO, CNTER_CD
+							) CARALC
+							, RCEPT_HIST RCEPT
+							WHERE CARALC.CNTER_CD = RCEPT.CNTER_CD
+								AND CARALC.RESVE_DT = RCEPT.RESVE_DT
+						) RCEPT
+					ON DRVER.VHCLE_NO = RCEPT.VHCLE_NO
+				, CNTER_INFO CNTER
+		        , MBER_INFO MBER 
+		        , (SELECT DRVER.MBER_ID, DRVER.WHEELCHAIR_FIXING_STTUS_CD, DRVER.LC_CRDNT_X AS LON, DRVER.lC_CRDNT_Y AS LAT
+					FROM (
+							SELECT MBER_ID, MAX(COLCT_DT) AS COLCT
+							FROM DRVER_LC_HIST 
+							WHERE 1=1
+							 <if test="cnter_cd != null">
+								AND CNTER_CD = #{cnter_cd}
+							</if>
+							GROUP BY MBER_ID
+						  ) DRVER_LC
+						  , DRVER_LC_HIST DRVER
+					WHERE DRVER.MBER_ID = DRVER_LC.MBER_ID
+						AND DRVER_LC.COLCT = DRVER.COLCT_DT
+					)DRVER_LC
+					, (SELECT @rownum:=0)TMP
+			WHERE DRVER.CNTER_CD = CNTER.CNTER_CD
+				AND DRVER.MBER_ID = MBER.MBER_ID
+		        AND DRVER.MBER_ID = DRVER_LC.MBER_ID
+		        <if test="cnter_cd != null">
+		        AND DRVER.CNTER_CD = #{cnter_cd}
+		        </if>
+		        <if test="drverSttusCd != 'ALL'">
+		        AND DRVER.DRVER_STTUS_CD = #{drverSttusCd}
+		        </if>
+		        <if test="drver_name!=null">
+		        AND MBER.MBER_NM LIKE CONCAT('%', #{drver_name}, '%')
+		        </if>
+			ORDER BY FIELD (DRVER.DRVER_STTUS_CD ,'30', '00', '10', '20', '40'), RCEPT.RESVE_DT DESC	
+		)X
+		WHERE @rownum <![CDATA[<]]> #{page.limit}
+	) Y
+	WHERE rnum <![CDATA[>=]]> #{page.offset}
+	</select>
+	
+	<select id="selectLcList" parameterType="locInfoCommand" resultType="locInfoLcDomain">
+		SELECT 
+			DRVER_LC.MBER_ID
+			, DRVER_LC.CNTER_CD
+			, DRVER_LC.LC_CRDNT_X
+			, DRVER_LC.LC_CRDNT_Y
+		FROM (
+			SELECT MAX(COLCT_DT) AS COLCT_DT
+				, MBER_ID
+			FROM DRVER_LC_HIST
+			WHERE 1=1
+				AND MBER_ID IN
+				<foreach collection="mber_id_list" item="list" open="(" close=")" separator=",">
+					#{list}
+				</foreach>
+			GROUP BY MBER_ID
+			) X
+			, DRVER_LC_HIST DRVER_LC
+		WHERE DRVER_LC.MBER_ID = X.MBER_ID
+			AND DRVER_LC.COLCT_DT = X.COLCT_DT
+	</select>
+	<select id="findLcList" parameterType="locInfoCommand" resultType="locInfoLcDomain">
+		SELECT DRVER.MBER_ID
+			, DRVER.CNTER_CD
+			, DRVER.LC_CRDNT_X
+			, DRVER.LC_CRDNT_Y
+            , (6371*acos(cos(radians(#{sel_lc_crdnt_x}))*cos(radians(DRVER.LC_CRDNT_X))*cos(radians(DRVER.LC_CRDNT_Y)
+			-radians(#{sel_lc_crdnt_y}))+sin(radians(#{sel_lc_crdnt_x}))*sin(radians(DRVER.LC_CRDNT_X))))
+			AS distance
+		FROM (
+				SELECT DRVER_LC.MBER_ID
+					, DRVER_LC.CNTER_CD
+					, DRVER_LC.LC_CRDNT_X
+					, DRVER_LC.LC_CRDNT_Y
+				FROM (
+					SELECT MAX(COLCT_DT) AS COLCT_DT, MBER_ID
+					FROM DRVER_LC_HIST
+					WHERE MBER_ID IN 
+					<foreach collection="mber_id_list" item="list" open="(" close=")" separator=",">
+						#{list}
+					</foreach>
+					GROUP BY MBER_ID
+					) X
+					, DRVER_LC_HIST DRVER_LC
+				WHERE DRVER_LC.MBER_ID = X.MBER_ID
+					AND DRVER_LC.COLCT_DT = X.COLCT_DT
+		    ) DRVER
+		HAVING distance <![CDATA[<=]]>1
+		ORDER BY distance 
+		LIMIT 0,15
+	</select>
+	<select id="getDrverInfo" parameterType="locInfoCommand" resultType="locDrverInfoDomain">
+		SELECT
+				MBER_ID, CONCAT(MBER_NM, '(', IFNULL(MBTLNUM, ' '), ')') AS DRVER_NM, CONCAT(VHCLE_NO, '(', DRVER_STTUS_NM, ')') AS VHCLE_NO
+		        , HANDI_MBER_NM, TROBL, CNTER_NM
+		FROM (
+			SELECT DRVER.MBER_ID
+				, DRVER.VHCLE_NO
+				, MBER.MBER_NM
+				, CONVERT(AES_DECRYPT(UNHEX(MBER.MBTLNUM), 'raison') using EUCKR) AS MBTLNUM
+				, (SELECT CD_VALUE_DE FROM CMMN_CD_VALUE_INFO WHERE CD_VALUE = DRVER.DRVER_STTUS_CD AND CD_ID = 'DRVER_STTUS_CD') AS DRVER_STTUS_NM
+				, CONCAT(HANDI.MBER_NM, '(', HANDI.MBTLNUM, ')') AS HANDI_MBER_NM
+				, CONCAT(HANDI.TROBL_KND_CD, '(', HANDI.TROBL_GRAD, '급)') AS TROBL
+				, HANDI.CNTER_NM
+			FROM DRVER_INFO DRVER
+					LEFT JOIN (
+								SELECT CARALC.VHCLE_NO
+									, MBER.MBER_NM
+									, CONVERT(AES_DECRYPT(UNHEX(MBER.MBTLNUM), 'raison') using EUCKR) AS MBTLNUM
+									, (SELECT CD_VALUE_DE FROM CMMN_CD_VALUE_INFO WHERE CD_VALUE = HANDICAP.TROBL_KND_CD  AND CD_ID = 'TROBL_KND_CD') AS TROBL_KND_CD
+									, TROBL_GRAD
+									, CNTER.CNTER_NM
+								FROM (
+									SELECT VHCLE_NO, CNTER_CD, MAX(RESVE_DT) AS RESVE_DT
+									FROM CARALC_HIST
+									WHERE VHCLE_NO IS NOT NULL
+									<if test="cnter_cd != null">
+										AND CNTER_CD = #{cnter_cd}
+									</if>
+									GROUP BY VHCLE_NO, CNTER_CD
+								) CARALC
+								, RCEPT_HIST RCEPT
+								, MBER_INFO MBER
+								, HANDICAP_INFO HANDICAP
+								, CNTER_INFO CNTER
+								WHERE CARALC.CNTER_CD = RCEPT.CNTER_CD
+									AND CARALC.RESVE_DT = RCEPT.RESVE_DT
+									AND RCEPT.MBER_ID = MBER.MBER_ID
+									AND MBER.MBER_ID = HANDICAP.MBER_ID
+									AND MBER.CNTER_CD = HANDICAP.CNTER_CD
+									AND MBER.CNTER_CD = CNTER.CNTER_CD
+								) HANDI
+					ON HANDI.VHCLE_NO = DRVER.VHCLE_NO
+				, MBER_INFO MBER
+			WHERE DRVER.MBER_ID = MBER.MBER_ID
+				AND DRVER.MBER_ID IN
+				<foreach collection="mber_id_list" item="list" open="(" close=")" separator=",">
+						#{list}
+					</foreach>
+		) X
+	</select>
+	<select id="getEmrgncy" parameterType="HashMap" resultType="emrgncyDomain">
+		SELECT B.MBER_ID, B.LC_CRDNT_X AS LON, B.LC_CRDNT_Y AS LAT, B.CNTER_CD
+			, CONCAT(C.MBER_NM, '(', IFNULL(CONVERT(AES_DECRYPT(UNHEX(C.MBTLNUM), 'raison') using EUCKR), ' '), ')') AS MBER_NAME
+		    , D.CNTER_NM
+		    , (SELECT CD_VALUE_DE FROM CMMN_CD_VALUE_INFO WHERE CD_ID='MBER_SE_CD' AND CD_VALUE=C.MBER_SE_CD) AS MBER_SE_NM
+		FROM (
+					SELECT 
+					MBER_ID
+					, MAX(COLCT_DT) AS COLCT_DT
+				FROM EMRGNCY_CALL_HIST
+				WHERE COLCT_DT > DATE(now())
+				GROUP BY MBER_ID
+				LIMIT 1
+				) A
+			, EMRGNCY_CALL_HIST B
+		    , MBER_INFO C
+		    , CNTER_INFO D
+		WHERE A.MBER_ID = B.MBER_ID
+			AND A.COLCT_DT = B.COLCT_DT
+		    AND B.MBER_ID = C.MBER_ID
+		    AND B.CNTER_CD = D.CNTER_CD
+		    AND B.CNFIRM_AT = 'N'
+	</select>
+</mapper>
